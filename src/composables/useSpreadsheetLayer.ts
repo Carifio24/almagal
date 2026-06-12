@@ -57,7 +57,7 @@ function buildCsv(points: [number, number][] | [number, number, number][]): stri
     const rows = points.map(([ra, dec]) => `${ra},${dec}`).join("\r\n");
     return `ra,dec\r\n${rows}`;
   }
-  
+
   throw new Error("Invalid points format for buildCsv");
 }
 
@@ -75,7 +75,7 @@ function isCoordinateJsonArray(data: any): data is CoordinateJson[] {
 
 export interface SpreadsheetLayerOptions {
   name?: string;
-  color?: string; 
+  color?: string;
   markerSize?: number;
   markerType?: MarkerType;
   distanceColumn?: string | null; // column name for distance
@@ -84,16 +84,16 @@ export interface SpreadsheetLayerOptions {
 }
 /**
  * RA in hours by default
- * 
+ *
  * [Optional] Distance in parsecs by default. The default distance column is "dist"
- * 
+ *
  * The options are
  *   - `name`: the name of layer. Default: "spreadsheet-layer"
  *   - `color`: the color of the markers. Default: "#ffffff"
  *   - `markerSize`: the size of the markers. Default: 10
  *   - `markerType`: "gaussian" | "point" | "circle". Default: "circle"
- *   - `distanceColumn`: Optional name of the distance column. Default: "dist". 
- *   - `distanceUnit`: Default: AltUnits.parsecs. 
+ *   - `distanceColumn`: Optional name of the distance column. Default: "dist".
+ *   - `distanceUnit`: Default: AltUnits.parsecs.
  *   - `raUnit`: Default: RAUnits.hours
  */
 export function useSpreadsheetLayer(
@@ -125,11 +125,11 @@ export function useSpreadsheetLayer(
     let lonCol = 0; // RA
     let latCol = 1; // Dec
     let distCol = 2; // Distance, if present
-    
+
     if (isArray2(points) || isArray3(points)) {
       dataCsv = buildCsv(points);
-    }  
-    
+    }
+
     if (isCoordinateJsonArray(points)) {
       dataCsv = jsonToCsv(points);
       // get the first row to determine which columns are ra/dec
@@ -143,16 +143,16 @@ export function useSpreadsheetLayer(
         }
       }
     }
-    
+
     if (!dataCsv) {
       throw new Error("Point data is not in a recognized format. Must be either [ra: number, dec: number][] or [ra: number, dec: number, distance: number][] or { ra: number, dec: number, dist?: number, ... }[]");
     }
-    
+
     const l = await store.createTableLayer(
-      { 
-        name, 
-        referenceFrame: "Sky", 
-        dataCsv 
+      {
+        name,
+        referenceFrame: "Sky",
+        dataCsv
       });
     l.set_lngColumn(lonCol);
     l.set_raUnits(raUnit);
@@ -180,6 +180,10 @@ export function useSpreadsheetLayer(
       return named;
     });
     return l;
+  }
+
+  function getLayer() {
+    return originalLayer;
   }
 
   type FilterFunction = (row: Record<string, string>) => boolean;
@@ -210,5 +214,5 @@ export function useSpreadsheetLayer(
   function show() { setVisible(true); }
   function hide() { setVisible(false); }
 
-  return { createLayer, applyFilter, setFilter, show, hide, setVisible };
+  return { createLayer, getLayer, applyFilter, setFilter, show, hide, setVisible };
 }
