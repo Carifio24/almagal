@@ -67,6 +67,10 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
   function findClosestRow3D(event: PointerEvent) {
     const halfThreshold = Math.round(0.5 * pixelThreshold);
     const pt = { x: event.offsetX, y: event.offsetY };
+
+    // Note that we can't create a global searching polyhedron and translate
+    // it to the relevant point each time, because a translation in screen space
+    // doesn't equate to a translation in world space
     const columnPoints = [
       { x: pt.x + halfThreshold, y: pt.y + halfThreshold },
       { x: pt.x - halfThreshold, y: pt.y + halfThreshold },
@@ -90,12 +94,11 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     const normals: Vector3d[] = [
       Vector3d.cross(x02, x24),
       Vector3d.cross(x67, x71),
-      Vector3d.cross(x71, x75).negate(),
-      Vector3d.cross(x24, x23).negate(),
-      Vector3d.cross(x02, x01).negate(),
+      Vector3d.negate(Vector3d.cross(x71, x75)),
+      Vector3d.negate(Vector3d.cross(x24, x23)),
+      Vector3d.negate(Vector3d.cross(x02, x01)),
       Vector3d.cross(x75, x67),
     ];
-
 
     const layer = spreadsheet.getLayer();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -103,6 +106,8 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     const positions: Vector3d[] = layer.positions;
 
     const indices = positions.reduce((accumulator, position, index) => {
+      console.log(position);
+      console.log(normals.map(norm => Vector3d.dot(position, norm)));
       if (normals.every(norm => Vector3d.dot(norm, position) < 0)) {
         accumulator.push(index);
       }
@@ -118,14 +123,32 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
 
     // If there are multiple results, we want to take the closest one
     // As a first pass, we can find the one whose dot product with the central vector is the least
+    // Note that the dot product should be positive by the construction of our polytope
+    const [_nearC, dirC] = store.findRayForScreenPoint(pt);
+    const lowestDot = indices.reduce((accumulator, currIndex, index) => {
+      const dot = Vector3d.dot(positions[currIndex], dirC);
+      if (dot < accumulator[1]) {
+        accumulator = [index, dot];
+      }
+      return accumulator;
+    }, [-1, Infinity] as [number, number]);
 
+    const index = lowestDot[0];
+    return { row: rows[index], index };
+  }
+
+  function activeRowFinder(): ClosestRowFinder | null {
+    const imagesetType = store.backgroundImageset?.get_dataSetType();
+    return imagesetType === ImageSetType.sky ? findClosestRow2D : (imagesetType === ImageSetType.solarSystem ? findClosestRow3D : null);
   }
 
   let lastResult: ReturnType<ClosestRowFinder> = null;
   function onPointerMove(event: PointerEvent) {
     if (store.backgroundImageset?.get_dataSetType() !== ImageSetType.sky) return; // only enable for sky layers
     if (!onHover) return;
-    const result = findClosestRow2D(event);
+    const rowFinder = activeRowFinder();
+    if (!rowFinder) return;
+    const result = rowFinder(event);
     if (lastResult === null && result === null) return; // both null, no change
     if (result && lastResult?.index === result.index) return; // same row, no change
     onHover(result?.row ?? null, result?.index ?? -1);
@@ -137,9 +160,10 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
   function onPointerUp(_event: PointerEvent) { /* i don't think we need this */ }
 
   function onPointerClick(event: PointerEvent) {
-    if (store.backgroundImageset?.get_dataSetType() !== ImageSetType.sky) return; // only enable for sky layers
     if (!options.onClick) return;
-    const result = findClosestRow(event);
+    const rowFinder = activeRowFinder();
+    if (!rowFinder) return;
+    const result = rowFinder(event);
     if (result) {
       options.onClick(result.row ?? null, result.index ?? -1);
     }

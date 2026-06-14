@@ -27,8 +27,9 @@ declare module "@wwtelescope/engine" {
   namespace Vector3d {
     function addVectors(a: Vector3d, b: Vector3d): Vector3d;
     function dot(a: Vector3d, b: Vector3d): number;
-    function cross(a: Vector3d, b: Vector3d): number;
+    function cross(a: Vector3d, b: Vector3d): Vector3d;
     function multiplyScalar(a: Vector3d, s: number): Vector3d;
+    function negate(v: Vector3d): Vector3d;
   }
 
 }
