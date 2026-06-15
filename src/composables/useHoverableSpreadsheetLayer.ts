@@ -67,6 +67,11 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
   function findClosestRow3D(event: PointerEvent) {
     const halfThreshold = Math.round(0.5 * pixelThreshold);
     const pt = { x: event.offsetX, y: event.offsetY };
+    console.log("----");
+    console.log(pt);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error ok to add to `window`
+    window.wwt = store;
 
     // Note that we can't create a global searching polyhedron and translate
     // it to the relevant point each time, because a translation in screen space
@@ -78,10 +83,17 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
       { x: pt.x + halfThreshold, y: pt.y - halfThreshold },
     ];
     const rayInfo = columnPoints.map(p => store.findRayForScreenPoint(p));
+    console.log(rayInfo.map(info => {
+      const v = info[0];
+      return store.findScreenPointForCoordinates({ x: v.x, y: v.z, z: v.y });
+    }));
     const vertices: Vector3d[] = [];
     rayInfo.forEach(info => {
-      vertices.push(info[0]);
-      vertices.push(Vector3d.addVectors(info[0], info[1]));
+      const [v1, v2] = info;
+      const v1Swapped = Vector3d.create(v1.x, v1.z, v1.y);
+      const v2Swapped = Vector3d.create(v2.x, v2.z, v2.y);
+      vertices.push(v1Swapped);
+      vertices.push(Vector3d.addVectors(v1Swapped, v2Swapped));
     });
 
     const x01 = Vector3d.subtractVectors(vertices[0], vertices[1]);
@@ -100,14 +112,18 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
       Vector3d.cross(x75, x67),
     ];
 
+    const [nearC, dirC] = store.findRayForScreenPoint(pt);
+    let center = Vector3d.addVectors(nearC, Vector3d.multiplyScalar(dirC, 0.5));
+    center = Vector3d.create(center.x, center.z, center.y);
+    console.log(normals.map(norm => Vector3d.dot(norm, center)));
+
     const layer = spreadsheet.getLayer();
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error `positions` does exist
     const positions: Vector3d[] = layer.positions;
 
     const indices = positions.reduce((accumulator, position, index) => {
-      console.log(position);
-      console.log(normals.map(norm => Vector3d.dot(position, norm)));
+      // console.log(normals.map(norm => Vector3d.dot(norm, position)));
       if (normals.every(norm => Vector3d.dot(norm, position) < 0)) {
         accumulator.push(index);
       }
@@ -124,7 +140,6 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     // If there are multiple results, we want to take the closest one
     // As a first pass, we can find the one whose dot product with the central vector is the least
     // Note that the dot product should be positive by the construction of our polytope
-    const [_nearC, dirC] = store.findRayForScreenPoint(pt);
     const lowestDot = indices.reduce((accumulator, currIndex, index) => {
       const dot = Vector3d.dot(positions[currIndex], dirC);
       if (dot < accumulator[1]) {
