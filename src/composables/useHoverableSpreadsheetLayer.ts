@@ -82,18 +82,18 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
       { x: pt.x - halfThreshold, y: pt.y - halfThreshold },
       { x: pt.x + halfThreshold, y: pt.y - halfThreshold },
     ];
+    console.log(columnPoints);
     const rayInfo = columnPoints.map(p => store.findRayForScreenPoint(p));
+    console.log(store);
     console.log(rayInfo.map(info => {
       const v = info[0];
-      return store.findScreenPointForCoordinates({ x: v.x, y: v.z, z: v.y });
+      console.log(v);
+      return store.findScreenPointForCoordinates({ x: v.x, y: v.y, z: v.z });
     }));
     const vertices: Vector3d[] = [];
     rayInfo.forEach(info => {
-      const [v1, v2] = info;
-      const v1Swapped = Vector3d.create(v1.x, v1.z, v1.y);
-      const v2Swapped = Vector3d.create(v2.x, v2.z, v2.y);
-      vertices.push(v1Swapped);
-      vertices.push(Vector3d.addVectors(v1Swapped, v2Swapped));
+      vertices.push(info[0]);
+      vertices.push(Vector3d.addVectors(info[0], info[1]));
     });
 
     const x01 = Vector3d.subtractVectors(vertices[0], vertices[1]);
