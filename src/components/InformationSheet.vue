@@ -6,6 +6,7 @@
          does not fire here, leaving that tab unreachable by keyboard. Drive it
          ourselves. -->
     <v-tabs
+      v-if="!hideTabs"
       v-model="tab"
       class="info-sheet-tabs"
       :color="tabColor"
@@ -20,12 +21,12 @@
            arrows move within it. With two tabs that just reads as "the second
            one is unreachable", so make both Tab stops. Arrow keys still work. -->
       <v-tab 
-        v-for="tabName in tabs" 
-        :key="tabName"
+        v-for="_tabName in tabs" 
+        :key="_tabName"
         class="info-sheet-tab" 
         tabindex="0"
       >
-        <h3>{{ tabName }}</h3>
+        <h3>{{ _tabName }}</h3>
       </v-tab>
     </v-tabs>
     <v-icon
@@ -63,6 +64,7 @@ export interface Props {
   accentColor?: string,
   tabTitle?: string,
   hideUserGuide?: boolean,
+  hideTabs?: boolean,
 }
 </script>
 
@@ -71,10 +73,45 @@ import { ref, computed, watch, nextTick } from 'vue';
 import{ provide, readonly } from 'vue';
 
 
+const emit = defineEmits(['close', 'update:tabName']);
+
+function handleClose() {
+  showTextSheet.value = false;
+  emit('close');
+}
+
+const showTextSheet = defineModel<boolean>();
+
+
 // adapted from https://vueschool.io/articles/vuejs-tutorials/tightly-coupled-components-vue-components-with-provide-inject/
 const tabs = ref<string[]>([]);
 // const tab = ref(0);
 const tab = defineModel<number>('tab', {default: 0});
+const tabName = defineModel<string>('tabName', {default: ''});
+let firstRun: boolean = true;
+// initialize the tabName to whatever tab is
+watch(tab, (newTab) => {
+  if (firstRun) {
+    tabName.value = tabs.value[newTab];
+    firstRun = false;
+  }
+});
+
+
+watch(tab, (newTab) => {
+  tabName.value = tabs.value[newTab];
+});
+watch(tabName, (newTabName) => {
+  const index = tabs.value.indexOf(newTabName);
+  if (index !== -1) {
+    tab.value = index;
+    return;
+  }
+  console.warn(`tabName ${newTabName} not found in tabs: ${tabs.value}`);
+});
+
+
+
 // This function will allow the child `vTabPanels` to register their title
 // with the parent `vTabs`
 // Again it's a function because of the reasoning above.
@@ -126,9 +163,6 @@ provide(injectionKey, {
 
 
 
-const showTextSheet = defineModel<boolean>();
-
-
 
 
 const props = defineProps<Props>();
@@ -146,12 +180,7 @@ const cssVars = computed(() => {
   };
 });
 
-const emit = defineEmits(['close']);
 
-function handleClose() {
-  showTextSheet.value = false;
-  emit('close');
-}
 
 
 </script>

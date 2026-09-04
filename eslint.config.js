@@ -102,6 +102,7 @@ export default typescriptEslint.config(
     rules: {
       'vue/multi-word-component-names': 'off',
       'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': ['error', { singleline: 3 }],
       'vue/require-default-prop': 'warn',
       'vue/no-v-html': 'off',
     },

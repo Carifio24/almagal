@@ -75,7 +75,7 @@
                 'flex-column': showFilters,
               }"
             >
-              <div class="d-flex flex-row ga-2">
+              <div class="d-flex flex-column ga-2">
                 <wwt-3d-switch
                   v-model="in3dView"
                   @3d="setup3DView"
@@ -93,42 +93,41 @@
                 </wwt-3d-switch>
                 <v-tooltip 
                   text="Filter sources"
-                  :location="showFilters ? 'right' : 'bottom'"
+                  location="right"
                 >
                   <template #activator="p">
                     <v-btn
-                      :icon="showFilters ? 'mdi-close' : 'mdi-filter'"
+                      icon="mdi-filter"
                       v-bind="p.props"
                       size="small"
                       color="surface-variant"
-                      @click="showFilters = !showFilters"
+                      @click="showFilters = true"
                     />
                   </template>
                 </v-tooltip>
                 <div
                   v-if="!in3dView"
-                  class="d-flex"
+                  class="d-flex align-center ga-2"
                 >
                   <v-tooltip
-                    v-if="!showSearch"
                     text="Search for source"
                     location="bottom"
                   >
                     <template #activator="p">
                       <v-btn
                         v-bind="p.props"
-                        icon="mdi-magnify"
+                        :icon="showSearch ? 'mdi-close' : 'mdi-magnify'"
                         size="small"
                         color="surface-variant"
-                        @click="showSearch = true"
+                        @click="showSearch = !showSearch"
                       />
                     </template>
                   </v-tooltip>
-                  <template v-else>
+                  <template v-if="showSearch">
                     <v-autocomplete
                       v-if="almagalSourceList"
                       v-model="selectedAlmagalSource"
-                      class="almagal-v-select"
+                      class="almagal-v-select on-canvas"
                       :items="almagalSourceList"
                       item-title="iid"
                       item-value="iid"
@@ -137,66 +136,20 @@
                       label="ALMAGAL Source"
                       :loading="pendingSourceIids.length > 0"
                       autofocus
-                    />
-                    <v-btn
-                      icon="mdi-close"
-                      size="small"
-                      variant="outlined"
-                      class="blur-button"
-                      @click="showSearch = false"
+                      density="compact"
                     />
                   </template>
                 </div>
-                <div
-                  v-if="!in3dView"
-                  class="d-flex"
-                >
-                  <v-tooltip
-                    v-if="!showBackgroundPicker"
-                    text="Background survey"
-                    location="bottom"
-                  >
-                    <template #activator="p">
-                      <v-btn
-                        v-bind="p.props"
-                        icon="mdi-image-multiple"
-                        size="small"
-                        color="surface-variant"
-                        aria-label="Choose background survey"
-                        @click="showBackgroundPicker = true"
-                      />
-                    </template>
-                  </v-tooltip>
-                  <template v-else>
-                    <v-select
-                      v-model="foregroundImage"
-                      class="almagal-v-select"
-                      :items="foregroundImageOptions"
-                      item-title="label"
-                      item-value="value"
-                      hide-details
-                      autofocus
-                      label="Background survey"
-                    />
-                    <v-btn
-                      icon="mdi-close"
-                      size="small"
-                      variant="outlined"
-                      class="blur-button"
-                      @click="showBackgroundPicker = false"
-                    />
-                  </template>
-                </div>
-                <!-- the way in to the Settings tab, which is otherwise only
-                     reachable once a clump is hovered or selected -->
+
+
                 <v-tooltip
-                  text="Comparison images"
+                  text="View settings"
                   location="bottom"
                 >
                   <template #activator="p">
                     <v-btn
                       v-bind="p.props"
-                      icon="mdi-cog"
+                      icon="mdi-tune-vertical"
                       size="small"
                       color="surface-variant"
                       aria-label="Comparison image settings"
@@ -205,54 +158,6 @@
                   </template>
                 </v-tooltip>
               </div>
-              <fieldset
-                v-if="showFilters"
-                class="almagal-filterset"
-              >
-                <!-- mass, lum, lm, tdust, dist_ag, tbol -->
-                <div
-                  v-for="field in filterFields"
-                  :key="field"
-                  class="filter-slider"
-                >
-                  <label>
-                    <span v-html="filterFieldLabels[field]"></span>&nbsp;
-                    <span
-                      v-if="hoveredSource"
-                      class="fiducial-display"
-                    >
-                      {{ formatSigFigs(hoveredSource[field]) }}
-                    </span>
-                    <RangeNumberInputs
-                      :model-value="filterSpec.get(field)!"
-                      :min="almagalColumnRanges[field].min"
-                      :max="almagalColumnRanges[field].max"
-                      :fiducial="hoveredSource ? hoveredSource[field] : undefined"
-                      :steps="500"
-                      log
-                      @update:model-value="(val) => filterSpec.set(field, val)"
-                    />
-                  </label>
-                </div>
-                <hr class="mt-3" />
-                <div class="clump-type-filter">
-                  <span>Clump type</span>
-                  <div class="clump-type-options">
-                    <label
-                      v-for="type in CLUMP_TYPES"
-                      :key="type"
-                      class="clump-type-option"
-                    >
-                      <input
-                        v-model="clumpTypeFilter"
-                        type="checkbox"
-                        :value="type"
-                      />
-                      {{ type }}
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
             </div>
           </div>
           <div id="right-buttons">
@@ -445,97 +350,168 @@
              above here would shift SETTINGS_TAB and the ALMAGAL blurb's index 1 -->
         <InfoPage title="Settings">
           <div class="settings-page">
-            <h3>Background survey</h3>
-            <p class="settings-hint">
-              Opacity of {{ foregroundImageLabel }} (foregroung image) over the backgroung GAIA DR2 image.
-            </p>
-            <v-slider
-              v-model="foregroundOpacity"
-              :min="0"
-              :max="1"
-              :step="0.01"
-              hide-details
-              density="compact"
-              prepend-icon="mdi-opacity"
-              aria-label="Background survey opacity"
-            />
-
-            <h3>Comparison images</h3>
-            <p class="settings-hint">
-              Other telescopes' views of the same star-forming regions. One shows
-              at a time — the collection piles many images onto the same few
-              complexes, so stacking them all just hides them behind each other.
-            </p>
-            <template v-if="in3dView">
-              <p class="settings-hint">
-                Comparison images are only available in the 2D sky view.
-              </p>
-            </template>
-            <template v-else-if="comparisonItems.length > 0">
-              <v-select
-                :model-value="comparisonIndex === -1 ? null : comparisonIndex"
-                :items="comparisonItems"
-                item-title="label"
-                item-value="value"
-                hide-details
-                density="compact"
-                label="Comparison image"
-                variant="outlined"
-                @update:model-value="goToComparison"
-              />
-              <div class="settings-row">
-                <v-btn
-                  variant="text"
-                  icon="mdi-chevron-left"
-                  size="small"
-                  aria-label="Previous comparison image"
-                  @click="stepComparison(-1)"
-                />
-                <v-btn
-                  variant="text"
-                  icon="mdi-chevron-right"
-                  size="small"
-                  aria-label="Next comparison image"
-                  @click="stepComparison(1)"
-                />
-                <v-btn
-                  variant="text"
-                  size="small"
-                  :icon="comparisonsVisible ? 'mdi-eye-off' : 'mdi-eye'"
-                  :aria-label="comparisonsVisible ? 'Hide comparison images' : 'Show comparison images'"
-                  @click="comparisonsVisible = !comparisonsVisible"
-                />
-                <v-btn
-                  variant="text"
-                  size="small"
-                  :icon="showAllComparisons ? 'mdi-layers-triple' : 'mdi-layers-triple-outline'"
-                  :aria-label="showAllComparisons ? 'Show only the selected comparison image' : 'Show all comparison images'"
-                  @click="toggleShowAllComparisons"
-                />
-              </div>
-              <v-slider
-                v-model="comparisonOpacity"
-                :min="0"
-                :max="1"
-                :step="0.01"
-                hide-details
-                density="compact"
-                prepend-icon="mdi-opacity"
-                aria-label="Comparison image opacity"
-              />
-              <p
-                v-if="currentComparisonDescription"
-                class="settings-description"
-              >
-                {{ currentComparisonDescription }}
-              </p>
-            </template>
-            <p
-              v-else
-              class="settings-hint"
+            <v-expansion-panels
+              v-model="settingsPanels"
+              variant="accordion"
+              multiple
+              eager
+              elevation=4
             >
-              Still loading the comparison image collection.
-            </p>
+              <v-expansion-panel title="Filters" value="filters">
+                <v-expansion-panel-text>
+                  <fieldset
+                    class="almagal-filterset"
+                  >
+                    <!-- mass, lum, lm, tdust, dist_ag, tbol -->
+                    <div
+                      v-for="field in filterFields"
+                      :key="field"
+                      class="filter-slider"
+                    >
+                      <label>
+                        <span v-html="filterFieldLabels[field]"></span>&nbsp;
+                        <span
+                          v-if="hoveredSource"
+                          class="fiducial-display"
+                        >
+                          {{ formatSigFigs(hoveredSource[field]) }}
+                        </span>
+                        <RangeNumberInputs
+                          :model-value="filterSpec.get(field)!"
+                          :min="almagalColumnRanges[field].min"
+                          :max="almagalColumnRanges[field].max"
+                          :fiducial="hoveredSource ? hoveredSource[field] : undefined"
+                          :steps="500"
+                          log
+                          @update:model-value="(val) => filterSpec.set(field, val)"
+                        />
+                      </label>
+                    </div>
+                    <hr class="mt-3" />
+                    <div class="clump-type-filter">
+                      <span>Clump type</span>
+                      <div class="clump-type-options">
+                        <label
+                          v-for="type in CLUMP_TYPES"
+                          :key="type"
+                          class="clump-type-option"
+                        >
+                          <input
+                            v-model="clumpTypeFilter"
+                            type="checkbox"
+                            :value="type"
+                          />
+                          {{ type }}
+                        </label>
+                      </div>
+                    </div>
+                  </fieldset>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel title="Background Survey" value="background">
+                <v-expansion-panel-text>
+                  <v-select
+                    v-model="foregroundImage"
+                    class="almagal-v-select mb-4"
+                    :items="foregroundImageOptions"
+                    item-title="label"
+                    item-value="value"
+                    hide-details
+                    autofocus
+                    label="Background survey"
+                    density="compact"
+                    variant="underlined"
+                  />
+                  <p class="settings-hint">
+                    Opacity of {{ foregroundImageLabel }} (foreground image) over the backgroun GAIA DR2 image.
+                  </p>
+                  <v-slider
+                    v-model="foregroundOpacity"
+                    :min="0"
+                    :max="1"
+                    :step="0.01"
+                    hide-details
+                    density="compact"
+                    prepend-icon="mdi-opacity"
+                    aria-label="Background survey opacity"
+                  />
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel title="Comparison images" value="comparison">
+                <v-expansion-panel-text>
+                  <template v-if="in3dView">
+                    <p class="settings-hint">
+                      Comparison images are only available in the 2D sky view.
+                    </p>
+                  </template>
+                  <template v-else-if="comparisonItems.length > 0">
+                    <v-select
+                      :model-value="comparisonIndex === -1 ? null : comparisonIndex"
+                      :items="comparisonItems"
+                      item-title="label"
+                      item-value="value"
+                      hide-details
+                      density="compact"
+                      label="Comparison image"
+                      variant="outlined"
+                      @update:model-value="goToComparison"
+                    />
+                    <div class="settings-row">
+                      <v-btn
+                        variant="text"
+                        icon="mdi-chevron-left"
+                        size="small"
+                        aria-label="Previous comparison image"
+                        @click="stepComparison(-1)"
+                      />
+                      <v-btn
+                        variant="text"
+                        icon="mdi-chevron-right"
+                        size="small"
+                        aria-label="Next comparison image"
+                        @click="stepComparison(1)"
+                      />
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        :icon="comparisonsVisible ? 'mdi-eye-off' : 'mdi-eye'"
+                        :aria-label="comparisonsVisible ? 'Hide comparison images' : 'Show comparison images'"
+                        @click="comparisonsVisible = !comparisonsVisible"
+                      />
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        :icon="showAllComparisons ? 'mdi-layers-triple' : 'mdi-layers-triple-outline'"
+                        :aria-label="showAllComparisons ? 'Show only the selected comparison image' : 'Show all comparison images'"
+                        @click="toggleShowAllComparisons"
+                      />
+                    </div>
+                    <v-slider
+                      v-model="comparisonOpacity"
+                      :min="0"
+                      :max="1"
+                      :step="0.01"
+                      hide-details
+                      density="compact"
+                      prepend-icon="mdi-opacity"
+                      aria-label="Comparison image opacity"
+                    />
+                    <p
+                      v-if="currentComparisonDescription"
+                      class="settings-description"
+                    >
+                      {{ currentComparisonDescription }}
+                    </p>
+                  </template>
+                  <p
+                    v-else
+                    class="settings-hint"
+                  >
+                    Still loading the comparison image collection.
+                  </p>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
           </div>
         </InfoPage>
       </InformationSheet>
@@ -611,7 +587,6 @@ import {
   spreadsheetVisible,
   type FilterField,
 } from "./almagal_state";
-
 
 import { useWtmlLoader } from "./composables/useWtmlLoader";
 import { useHoverableSpreadsheetLayer } from "./composables/useHoverableSpreadsheetLayer";
@@ -708,7 +683,18 @@ const layersLoaded = ref(false);
 const positionSet = ref(false);
 const accentColor = ref("#306C9F");
 const accentColor2 = ref("#FC9954");
-
+// all panels are open by default.
+const settingsPanels = ref<("filters" | "background" | "comparison")[]>(['filters', 'background', 'comparison']);
+watch(settingsPanels, (newVal) => {
+  console.log("settingsPanels changed:", newVal);
+});
+watch(showFilters, (newVal) => {
+  if (newVal && !settingsPanels.value.includes('filters')) {
+    settingsPanels.value.push('filters');
+  }
+  infoSheetTab.value = SETTINGS_TAB;
+  openSettings();
+});
 const hoveredSource = ref<ALMAGalSource | null>(null);
 const MAX_ITEMS_TO_SHOW = 4;
 const sourcesInView= useSourcesInView(almagalSourceList.value);
@@ -1252,7 +1238,16 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
 
 /* OLD: overlay version. Taken out of flow with `position: absolute`, so it
    slid over #main-content and the WWT view never changed size.
-
+<v-select
+                      v-model="foregroundImage"
+                      class="almagal-v-select"
+                      :items="foregroundImageOptions"
+                      item-title="label"
+                      item-value="value"
+                      hide-details
+                      autofocus
+                      label="Background survey"
+                    />
 #side-drawer {
   position: absolute;
   bottom: 0;
@@ -1639,14 +1634,17 @@ and remember, position:absolute is still a positioned parent, so children can be
   width: 100%;
 }
 
+.on-canvas {
+  background-color: rgba(0, 0, 0, 0.364);
+  border: 1px solid rgba(255, 255, 255, 0.541);
+  border-radius: 5px;
+  backdrop-filter: blur(10px);
+}
+
 .almagal-v-select {
   pointer-events: auto;
-  width: 100%;
-  min-width: 250px;
-  background-color: rgba(0, 0, 0, 0.364);
-  backdrop-filter: blur(10px);
-  outline: 1px solid white;
   border-radius: 4px;
+  min-width: 250px;
 }
 
 .hovered-source-info {
@@ -1667,20 +1665,11 @@ and remember, position:absolute is still a positioned parent, so children can be
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.5em 1.25em;
-  width: 100%;
-  max-width: 230px;
-  max-height: 50vh;
-  overflow-y: auto;
-  pointer-events: auto;
-  padding: 0.5em 0.75em;
-  background-color: rgba(0, 0, 0, 0.364);
-  backdrop-filter: blur(8px);
   border-radius: 8px;
   font-size: 0.9em;
   padding-bottom: 1em;
   padding-right: 1em;
-  scrollbar-gutter: stable;
-  border: 1px solid white;
+  border: none; // browser has a default border on fieldsets
 }
 
 .filter-slider label {
@@ -1707,21 +1696,6 @@ and remember, position:absolute is still a positioned parent, so children can be
 .almagal-filterset > .clump-type-filter {
   grid-column-start: 1;
   grid-column-end: -1;
-}
-
-// Two columns only on a short window that still has width to spare: halving the
-// panel's height is worth covering more sky when height is what runs out first.
-// A height query, not `app-is-small`, since height is the thing at stake.
-@media (max-height: 800px) and (min-width: 700px) {
-  .almagal-filterset {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 470px;
-  }
-
-  // 130px rather than 100px so the five types break 3 + 2 across the wider panel
-  .clump-type-filter > .clump-type-options {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  }
 }
 
 // style the legend to be centerd
