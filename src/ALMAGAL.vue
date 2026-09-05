@@ -157,6 +157,22 @@
                     />
                   </template>
                 </v-tooltip>
+
+                <v-tooltip
+                  text="User guide"
+                  location="bottom"
+                >
+                  <template #activator="p">
+                    <v-btn
+                      v-bind="p.props"
+                      icon="mdi-help"
+                      size="small"
+                      color="surface-variant"
+                      aria-label="Open the user guide"
+                      @click="openUserGuide"
+                    />
+                  </template>
+                </v-tooltip>
               </div>
             </div>
           </div>
@@ -209,7 +225,7 @@
                 class="ml-2"
                 density="compact"
                 icon="mdi-information-slab-circle-outline"
-                @click="showInfoSheet = !showInfoSheet"
+                @click="openSourceInfo"
               >
               </v-btn>
             </div>
@@ -324,6 +340,9 @@
       id="side-drawer"
       :class="[sidePanel ? 'info-side' : 'info-bottom', showInfoSheet ? 'side-drawer-open' : 'side-drawer-closed']"
     >
+      <!-- 
+      The Information sheet now will create tabs based on the content of the sheet
+       -->
       <InformationSheet
         v-model="showInfoSheet"
         v-model:tab="infoSheetTab"
@@ -331,7 +350,7 @@
         text-color="#e6e6e6"
       >
         <!-- each page registers its own tab, in this order -->
-        <InfoPage title="Information">
+        <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
           <AlmaGalSourceInfoDisplay
             v-if="currentSource && !in3dView"
             :source="currentSource"
@@ -340,22 +359,25 @@
             Hover over or click one of the green markers to see a clump's properties here.
           </p>
         </InfoPage>
-        <InfoPage title="ALMAGAL">
+        
+        <InfoPage v-if="infoSheetTab === ALMAGAL_TAB || infoSheetTab === USER_GUIDE_TAB" title="ALMAGAL">
           ALMAGAL Survey Informational blurb
         </InfoPage>
-        <InfoPage title="User Guide">
-          <UserGuide />
-        </InfoPage>
-        <!-- appended last on purpose: the tabs are positional, so inserting
-             above here would shift SETTINGS_TAB and the ALMAGAL blurb's index 1 -->
-        <InfoPage title="Settings">
+
+        <!-- The UserGuide itself is an InfoPage
+         so it can be included with wrapping it here.
+         Useful for long componenets that can be easily placed in a different file.
+          -->
+        <UserGuide v-if="infoSheetTab === ALMAGAL_TAB || infoSheetTab === USER_GUIDE_TAB" />
+
+        <InfoPage v-if="infoSheetTab === SETTINGS_TAB" title="Settings">
           <div class="settings-page">
             <v-expansion-panels
               v-model="settingsPanels"
               variant="accordion"
               multiple
               eager
-              elevation=4
+              elevation="0"
             >
               <v-expansion-panel title="Filters" value="filters">
                 <v-expansion-panel-text>
@@ -514,6 +536,7 @@
             </v-expansion-panels>
           </div>
         </InfoPage>
+        <!--  -->
       </InformationSheet>
     </div>
   </v-app>
@@ -649,15 +672,32 @@ const props = withDefaults(defineProps<WwtPlaygroundProps>(), {
 
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const showInfoSheet = ref(false);
-// the info sheet's pages register themselves as tabs, in template order
-const infoSheetTab = ref(0);
-/* Positional, like every other tab index here: Information, ALMAGAL, User
-   Guide, Settings. Move the InfoPage and this has to move with it. */
-const SETTINGS_TAB = 3;
+// Each info sheet registers a tab when it is available in the DOM
+const SOURCE_INFORMATION_TAB = "source-information";
+const ALMAGAL_TAB = "almagal";
+const SETTINGS_TAB = "settings";
+const USER_GUIDE_TAB = "user-guide";
+type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB | typeof SETTINGS_TAB | typeof USER_GUIDE_TAB;
+const infoSheetTab = ref<InfoSheetTab>(ALMAGAL_TAB);
 /* The info button only appears once a clump is hovered or selected, so the
    sheet needs its own way in for settings that have nothing to do with a clump. */
 function openSettings() {
   infoSheetTab.value = SETTINGS_TAB;
+  showInfoSheet.value = true;
+}
+function openUserGuide() {
+  infoSheetTab.value = USER_GUIDE_TAB;
+  showInfoSheet.value = true;
+}
+/* Each page is mounted only for its own tab, so a button that opens the sheet
+   has to say which tab it means -- this one is about the clump. Still a toggle:
+   pressing it again with the clump's page already up closes the sheet. */
+function openSourceInfo() {
+  if (showInfoSheet.value && infoSheetTab.value === SOURCE_INFORMATION_TAB) {
+    showInfoSheet.value = false;
+    return;
+  }
+  infoSheetTab.value = SOURCE_INFORMATION_TAB;
   showInfoSheet.value = true;
 }
 
@@ -692,7 +732,6 @@ watch(showFilters, (newVal) => {
   if (newVal && !settingsPanels.value.includes('filters')) {
     settingsPanels.value.push('filters');
   }
-  infoSheetTab.value = SETTINGS_TAB;
   openSettings();
 });
 const hoveredSource = ref<ALMAGalSource | null>(null);
@@ -1099,8 +1138,8 @@ watch(selectedAlmagalSource, (newSource, oldSource) => {
     });
   }
   // picking a clump means the ALMAGAL blurb is not what is wanted
-  if (newSource && infoSheetTab.value === 1) {
-    infoSheetTab.value = 0;
+  if (newSource && infoSheetTab.value === ALMAGAL_TAB) {
+    infoSheetTab.value = SOURCE_INFORMATION_TAB;
   }
 });
 
@@ -1670,6 +1709,7 @@ and remember, position:absolute is still a positioned parent, so children can be
   padding-bottom: 1em;
   padding-right: 1em;
   border: none; // browser has a default border on fieldsets
+  
 }
 
 .filter-slider label {

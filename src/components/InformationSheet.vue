@@ -5,9 +5,17 @@
          pattern, where arrow keys move between tabs) but its own arrow handling
          does not fire here, leaving that tab unreachable by keyboard. Drive it
          ourselves. -->
+    
+    <!-- mandatory gets rid of a recursion when v-if'ing away InfoPages
+     by default has a mandatory = force, means vuetify will pick a tab if nothing is selected
+     so if we are v-if'ing away what is selected, this created a cycle where because what is v-if'd
+     controls what tabs are available, and so it would spiral. but we don't want that behavior anyway. 
+     we want mandatory = true so the user (or the app) has to select a tab. 
+      -->
     <v-tabs
       v-if="!hideTabs"
-      v-model="tab"
+      v-model="tabName"
+      :mandatory="true"
       class="info-sheet-tabs"
       :color="tabColor"
       :slider-color="tabColor"
@@ -22,11 +30,13 @@
            one is unreachable", so make both Tab stops. Arrow keys still work. -->
       <v-tab 
         v-for="_tabName in tabs" 
-        :key="_tabName"
+        :key="_tabName.value"
+        :value="_tabName.value"
         class="info-sheet-tab" 
+        :ripple="false"
         tabindex="0"
       >
-        <h3>{{ _tabName }}</h3>
+        <h3>{{ _tabName.title }}</h3>
       </v-tab>
     </v-tabs>
     <v-icon
@@ -41,7 +51,8 @@
     </v-icon>
 
     <!-- Information Content -->
-    <v-window id="tab-items" v-model="tab" class="pb-2" :style="cssVars">
+    <!-- mandatory for the same same reason  -->
+    <v-window id="tab-items" v-model="tabName" :mandatory="true" class="pb-2" :style="cssVars">
       <slot />
     </v-window>
   </v-card>
@@ -52,9 +63,10 @@
 import type { InjectionKey, Ref } from "vue";
 export const injectionKey = Symbol("vTabs") as InjectionKey<{
     withinTabs: boolean;
-    registerTab: (title: string) => number;
-    activeTab: Readonly<Ref<number | undefined>>;
-    activateTab: (index: number) => void;
+    registerTab: (value: string, title: string) => number;
+    unregisterTab: (value: string) => boolean;
+    activeTab: Readonly<Ref<string>>;
+    activateTab: (value: string) => void;
   }>;
   
 export interface Props {
@@ -84,46 +96,78 @@ const showTextSheet = defineModel<boolean>();
 
 
 // adapted from https://vueschool.io/articles/vuejs-tutorials/tightly-coupled-components-vue-components-with-provide-inject/
-const tabs = ref<string[]>([]);
+interface TabSpec {
+  title: string;
+  value: string;
+}
+const tabs = ref<TabSpec[]>([]);
 // const tab = ref(0);
-const tab = defineModel<number>('tab', {default: 0});
-const tabName = defineModel<string>('tabName', {default: ''});
-let firstRun: boolean = true;
-// initialize the tabName to whatever tab is
+
+/** the tab value defined on an `<InfoPage>` to show.
+ * The `InfoPage` value defaults to the kebab-case title. but can be set with `value` prop
+ */
+const tabName = defineModel<string>('tab', {default: ''});
+/** you can also select by index. */
+const tab = defineModel<number>('index', {default: 0});
+
+const indexOfTab = (value: string) => tabs.value.findIndex(tab => tab.value === value);
+
 watch(tab, (newTab) => {
-  if (firstRun) {
-    tabName.value = tabs.value[newTab];
-    firstRun = false;
+  const spec = tabs.value[newTab];
+  if (spec === undefined) {
+    console.warn(`tab index ${newTab} is out of range: ${tabs.value.length} tab(s) registered`);
+    return;
   }
+  tabName.value = spec.value;
 });
 
-
-watch(tab, (newTab) => {
-  tabName.value = tabs.value[newTab];
-});
-watch(tabName, (newTabName) => {
-  const index = tabs.value.indexOf(newTabName);
+// `flush: 'post'`, and `tabs` is a source of its own, because a consumer may
+// mount its pages with the tab (`v-if="tab === 'settings'"`): the page being
+// asked for only registers during the render this change triggers, and the
+// outgoing page only unregisters in its `onUnmounted`, which Vue queues after
+// that. Pre-flush this lookup would run against neither.
+watch([tabName, () => tabs.value.length], () => {
+  const index = indexOfTab(tabName.value);
   if (index !== -1) {
     tab.value = index;
     return;
   }
-  console.warn(`tabName ${newTabName} not found in tabs: ${tabs.value}`);
-});
+  if (tabs.value.length === 0) {
+    // nothing has registered yet; whichever page mounts first will settle it
+    return;
+  }
+  if (tabName.value === '') {
+    tabName.value = tabs.value[0].value;
+    return;
+  }
+  console.warn(`tabName ${tabName.value} not found in tabs: ${tabs.value.map(tab => tab.value).join(', ')}`);
+}, { flush: 'post' });
 
 
 
 // This function will allow the child `vTabPanels` to register their title
 // with the parent `vTabs`
 // Again it's a function because of the reasoning above.
-function registerTab(title: string) {
-  const existing = tabs.value.indexOf(title);
+function registerTab(value: string, title: string) {
+  // const existing = tabs.value.indexOf(title);
+  const existing = tabs.value.findIndex(tab => tab.value === value && tab.title === title);
   if (existing !== -1) return existing;
-  tabs.value.push(title);
+  tabs.value.push({value, title});
   return tabs.value.length - 1;
 }
 
-function activateTab(index: number) {
-  tab.value = index;
+function activateTab(value: string) {
+  tabName.value = value;
+}
+
+function unregisterTab(value: string) {
+  // const index = tabs.value.indexOf(title);
+  const index = tabs.value.findIndex(tab => tab.value === value);
+  if (index !== -1) {
+    tabs.value.splice(index, 1);
+    return true;
+  }
+  return false;
 }
 
 // left/right through the tabs, wrapping, then move focus to the new one so the
@@ -133,7 +177,8 @@ function cycleTab(delta: number) {
   if (count < 2) {
     return;
   }
-  tab.value = (tab.value + delta + count) % count;
+  const current = indexOfTab(tabName.value);
+  tabName.value = tabs.value[(current + delta + count) % count].value;
   nextTick(() => {
     const selected = document.querySelector<HTMLElement>(".info-sheet-tab.v-tab--selected");
     selected?.focus();
@@ -152,10 +197,11 @@ provide(injectionKey, {
   // We expose the 2 functions defined above to the child
   registerTab,
   activateTab,
+  unregisterTab,
 
   // We expose the active tab to the child
   // but notice we use readonly to keep the child from directly mutating it
-  activeTab: readonly(tab),
+  activeTab: readonly(tabName),
 });
 
 
@@ -168,7 +214,7 @@ provide(injectionKey, {
 const props = defineProps<Props>();
 
 watch(() => props.hideUserGuide, (hidden) => {
-  if (hidden) tab.value = 0;
+  if (hidden) tabName.value = tabs.value[0]?.value ?? '';
 });
 
 const cssVars = computed(() => {
@@ -198,6 +244,16 @@ const cssVars = computed(() => {
 // fell back to the UA default of 1.17em bold
 .info-sheet-tab h3 {
   font-size: 0.9em;
+}
+
+// this will make them narrower
+// the double .v-tab is used to beat vuetify's specificity.
+// .info-sheet-tab.v-btn.v-tab.v-tab {
+//   padding-inline: 4px;
+//   min-width: 0px;
+// }
+.info-sheet-tab.v-btn.v-tab.v-tab.v-tab--selected {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .info-text {
@@ -318,12 +374,5 @@ const cssVars = computed(() => {
     right: calc((2em - 0.6875em) / 3);
   }
 
-
-  // This prevents the tabs from having some extra space to the left when the screen is small
-  // (around 400px or less)
-  .v-tabs:not(.v-tabs--vertical).v-tabs--right>.v-slide-group--is-overflowing.v-tabs-bar--is-mobile:not(.v-slide-group--has-affixes) .v-slide-group__next,
-  .v-tabs:not(.v-tabs--vertical):not(.v-tabs--right)>.v-slide-group--is-overflowing.v-tabs-bar--is-mobile:not(.v-slide-group--has-affixes) .v-slide-group__prev {
-    display: none;
-  }
 }
 </style>
