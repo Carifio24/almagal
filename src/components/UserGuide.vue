@@ -149,3 +149,10 @@ const easyLink = (props: { href: string }, { slots }: SetupContext) => {
 
 const touchscreen = supportsTouchscreen();
 </script>
+
+<style scoped>
+/* the gap under the credits, so the last line clears the bottom of the sheet */
+.end-spacer {
+  height: 25px;
+}
+</style>

@@ -55,8 +55,8 @@
       <!-- This contains the splash screen content -->
       <SplashScreen
         v-model="showSplashScreen"
-        :accent-color="accentColor"
-        :highlight-color="accentColor2"
+        :accent-color="almagalBlue"
+        :highlight-color="almagalOrange"
         :loaded="!isLoading"
       />
 
@@ -346,8 +346,12 @@
       <InformationSheet
         v-model="showInfoSheet"
         v-model:tab="infoSheetTab"
-        :tab-color="accentColor"
+        tab-color="white"
+        :slider-color="almagalBlue"
+        :accent-color="almagalBlue"
         text-color="#e6e6e6"
+        :bg-color="almagalBlue"
+        page-color="transparent"
       >
         <!-- each page registers its own tab, in this order -->
         <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
@@ -360,7 +364,7 @@
           </p>
         </InfoPage>
         
-        <InfoPage v-if="infoSheetTab === ALMAGAL_TAB || infoSheetTab === USER_GUIDE_TAB" title="ALMAGAL">
+        <InfoPage v-if="inInfoGroup" title="ALMAGAL">
           ALMAGAL Survey Informational blurb
         </InfoPage>
 
@@ -368,7 +372,7 @@
          so it can be included with wrapping it here.
          Useful for long componenets that can be easily placed in a different file.
           -->
-        <UserGuide v-if="infoSheetTab === ALMAGAL_TAB || infoSheetTab === USER_GUIDE_TAB" />
+        <UserGuide v-if="inInfoGroup" />
 
         <InfoPage v-if="infoSheetTab === SETTINGS_TAB" title="Settings">
           <div class="settings-page">
@@ -677,8 +681,12 @@ const SOURCE_INFORMATION_TAB = "source-information";
 const ALMAGAL_TAB = "almagal";
 const SETTINGS_TAB = "settings";
 const USER_GUIDE_TAB = "user-guide";
-type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB | typeof SETTINGS_TAB | typeof USER_GUIDE_TAB;
+type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB | typeof SETTINGS_TAB
+  | typeof USER_GUIDE_TAB;
+// the pages that mount together, and so show up as each other's tabs
+const infoGroupTabs: InfoSheetTab[] = [ALMAGAL_TAB, USER_GUIDE_TAB];
 const infoSheetTab = ref<InfoSheetTab>(ALMAGAL_TAB);
+const inInfoGroup = computed(() => infoGroupTabs.includes(infoSheetTab.value));
 /* The info button only appears once a clump is hovered or selected, so the
    sheet needs its own way in for settings that have nothing to do with a clump. */
 function openSettings() {
@@ -721,8 +729,8 @@ const showSearch = ref(false);
 const showSplashScreen = ref(false);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
-const accentColor = ref("#306C9F");
-const accentColor2 = ref("#FC9954");
+const almagalBlue = ref("#306C9F");
+const almagalOrange = ref("#FC9954");
 // all panels are open by default.
 const settingsPanels = ref<("filters" | "background" | "comparison")[]>(['filters', 'background', 'comparison']);
 watch(settingsPanels, (newVal) => {
@@ -1156,8 +1164,8 @@ const currentSource = computed(() => {
 /* This lets us inject component data into element CSS */
 const cssVars = computed(() => {
   return {
-    "--accent-color": accentColor.value,
-    "--accent-color-2": accentColor2.value,
+    "--almagal-blue": almagalBlue.value,
+    "--almagal-orange": almagalOrange.value,
   };
 });
 
@@ -1855,7 +1863,8 @@ and remember, position:absolute is still a positioned parent, so children can be
 
 .settings-description {
   font-size: 0.9em;
-  border-left: 2px solid var(--accent-color);
+  border-left: 2px solid var(--almagal-blue);
   padding-left: 0.75em;
 }
+
 </style>

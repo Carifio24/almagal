@@ -136,8 +136,8 @@ const nextHidden = computed(() => props.step === props.totalSteps && !props.show
   // touching the breadcrumb dots or the buttons a caller puts in
   // the slots.
   .v-btn {
-    border: 1px solid var(--accent-color);
-    background-color: var(--accent-color);
+    border: 1px solid var(--almagal-blue);
+    background-color: var(--almagal-blue);
     color: white;
   }
 
@@ -181,7 +181,7 @@ const nextHidden = computed(() => props.step === props.totalSteps && !props.show
     }
 
     button.tour-dot-active {
-      color: var(--accent-color);
+      color: var(--almagal-blue);
       --font-delta: 0.25em;
       font-size: calc(var(--tour-dot-size) + var(--font-delta));
       margin: calc(-1*var(--font-delta));
