@@ -1,5 +1,7 @@
 import { computed } from "vue";
 import { engineStore } from '@wwtelescope/engine-pinia';
+import { Coordinates, SpaceTimeController, Vector3d } from "@wwtelescope/engine";
+import { D2R, H2R, R2D, R2H } from "@wwtelescope/astro";
 
 const THREED_VIEW_NAME = "3D Solar System View";
 
@@ -56,10 +58,16 @@ function createWwt3dControl(
     return new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         if (!oldPosition) return resolve(); // should never happen, but just in case
+        // rotate by the actual obliquity
+        const look = Coordinates.raDecTo3d(oldPosition.ra * R2H, oldPosition.dec * R2D);
+        look.rotateX(Coordinates.meanObliquityOfEcliptic(SpaceTimeController.get_jNow()) * D2R);
+        const back = Coordinates.cartesianToSphericalSky(Vector3d.create(-look.x, -look.y, -look.z));
+        const [glon] = Coordinates.j2000toGalactic(oldPosition.ra * R2D, oldPosition.dec * R2D);
         store.gotoRADecZoom({
-          raRad: -(oldPosition.ra + Math.PI / 2),
-          decRad: -(oldPosition.dec + 23.5 * Math.PI / 180), // rotate by earth' approximate obliquity
-          rollRad: 62.9 * Math.PI / 180, // tilt by angle between celestial equator & galactic planes
+          raRad: Math.PI / 2 - back.x * H2R,
+          decRad: back.y * D2R,
+          // claude found a decent approximation. angle between galactic and ecliptic goes from -60.19 to +60.19
+          rollRad: Math.atan(Math.tan(60.19 * D2R) * Math.cos((glon - 6.4) * D2R)) - oldPosition.roll,
           zoomDeg: 2 * 15000 * 9 / 4,
           instant: true,
         }).then(() => resolve());

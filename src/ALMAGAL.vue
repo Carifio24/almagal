@@ -1095,7 +1095,7 @@ watch(showTour, (open) => {
   }
 });
 
-let first3dswap = true;
+let first3dswap = false;
 function setup3DView() {
   if (!first3dswap) {
     return;
