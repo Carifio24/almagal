@@ -75,36 +75,36 @@
                 'flex-column': showFilters,
               }"
             >
-              <div class="d-flex flex-column ga-2">
+              <div class="d-flex flex-column align-start ga-2">
                 <wwt-3d-switch
-                  v-model="in3dView"
                   @3d="setup3DView"
                 >
-                  <template #default="{ in3d, onClick}">
-                    <v-btn
+                  <template #default="{ onClick}">
+                    <!-- <v-btn
                       variant="outlined"
                       size="small"
                       class="blur-button"
                       @click="onClick"
                     >
-                      {{ in3d ? "Switch to 2D" : "Switch to 3D" }}
-                    </v-btn>
+                      {{ in3dView ? "Switch to 2D" : "Switch to 3D" }}
+                    </v-btn> -->
+                    <div class="d-flex align-center">
+                      <!-- <div>2D</div> -->
+                      <v-switch
+                        :model-value="in3dView"
+                        inset
+                        append-icon="mdi-video-3d"
+                        true-icon="mdi-video-3d"
+                        prepend-icon="mdi-video-2d"
+                        false-icon="mdi-video-2d"
+                        hide-details
+                        density="compact"
+                        @click="onClick"
+                      />
+                      <!-- <div>3D</div> -->
+                    </div>
                   </template>
                 </wwt-3d-switch>
-                <v-tooltip 
-                  text="Filter sources"
-                  location="right"
-                >
-                  <template #activator="p">
-                    <v-btn
-                      icon="mdi-filter"
-                      v-bind="p.props"
-                      size="small"
-                      color="surface-variant"
-                      @click="showFilters = true"
-                    />
-                  </template>
-                </v-tooltip>
                 <div
                   v-if="!in3dView"
                   class="d-flex align-center ga-2"
@@ -170,6 +170,21 @@
                       color="surface-variant"
                       aria-label="Open the user guide"
                       @click="openUserGuide"
+                    />
+                  </template>
+                </v-tooltip>
+                <v-tooltip
+                  text="tour"
+                  location="bottom"
+                >
+                  <template #activator="p">
+                    <v-btn
+                      v-bind="p.props"
+                      icon="mdi-transit-connection-variant"
+                      size="small"
+                      color="surface-variant"
+                      aria-label="Start the tour"
+                      @click="showTour = !showTour"
                     />
                   </template>
                 </v-tooltip>
@@ -347,11 +362,12 @@
         v-model="showInfoSheet"
         v-model:tab="infoSheetTab"
         tab-color="white"
-        :slider-color="almagalBlue"
+        :slider-color="almagalOrange"
         :accent-color="almagalBlue"
         text-color="#e6e6e6"
         :bg-color="almagalBlue"
         page-color="transparent"
+        :stay-open="forceInfoSheetOpen"
       >
         <!-- each page registers its own tab, in this order -->
         <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
@@ -676,6 +692,7 @@ const props = withDefaults(defineProps<WwtPlaygroundProps>(), {
 
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
 const showInfoSheet = ref(false);
+const forceInfoSheetOpen = ref(true);
 // Each info sheet registers a tab when it is available in the DOM
 const SOURCE_INFORMATION_TAB = "source-information";
 const ALMAGAL_TAB = "almagal";
@@ -736,12 +753,7 @@ const settingsPanels = ref<("filters" | "background" | "comparison")[]>(['filter
 watch(settingsPanels, (newVal) => {
   console.log("settingsPanels changed:", newVal);
 });
-watch(showFilters, (newVal) => {
-  if (newVal && !settingsPanels.value.includes('filters')) {
-    settingsPanels.value.push('filters');
-  }
-  openSettings();
-});
+
 const hoveredSource = ref<ALMAGalSource | null>(null);
 const MAX_ITEMS_TO_SHOW = 4;
 const sourcesInView= useSourcesInView(almagalSourceList.value);
@@ -1068,11 +1080,19 @@ function view3dFromGlonGlatDistkpc(glon: number, glat: number, dist_kpc: number)
   });
 }
 
-/* Tracks whether the WWT view is currently in 3D mode, kept in sync via wwt-3d-switch's v-model */
-const in3dView = ref(false);
+/* singleton wwt 3d controller */
+import { useWwt3dControl } from "./composables/wwt3dControl";
+const { in3D: in3dView, switchTo2D } = useWwt3dControl(store);
 
 watch(in3dView, (in3d) => {
   sunLayer.value?.set_enabled(in3d);
+});
+
+/* The tour's steps all set up 2D sky views, so opening it has to leave 3D. */
+watch(showTour, (open) => {
+  if (open && in3dView.value) {
+    switchTo2D();
+  }
 });
 
 let first3dswap = true;
@@ -1867,4 +1887,13 @@ and remember, position:absolute is still a positioned parent, so children can be
   padding-left: 0.75em;
 }
 
+// adjust the wwt-3d switch 
+.wwt-3d-swtich-container .v-input.v-switch > .v-input__prepend {
+  margin-right: 4px;
+  font-size: 20px;
+}
+.wwt-3d-swtich-container .v-input.v-switch > .v-input__append {
+  margin-left: 4px;
+  font-size: 20px;
+}
 </style>

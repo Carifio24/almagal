@@ -1,21 +1,36 @@
 import { computed } from "vue";
-import type { engineStore } from '@wwtelescope/engine-pinia';
+import { engineStore } from '@wwtelescope/engine-pinia';
 
 const THREED_VIEW_NAME = "3D Solar System View";
 
+type Wwt3dHook = () => void;
+
 interface Wwt3dControlOptions {
-  /** run once the move into the 3D view has finished */
-  on3d?: () => void;
-  /** run once the move back to the saved 2D view has finished */
-  on2d?: () => void;
+  /** run when we finish to 3d transition */
+  on3d?: Wwt3dHook;
+  /** run when we finish to 2d transition */
+  on2d?: Wwt3dHook;
 }
 
 /** Switching between the sky and the 3D solar system, and back to wherever the
     sky view was pointed. `in3D` is derived from the store, not kept alongside it. */
-export function useWwt3dControl(
+function createWwt3dControl(
   store: ReturnType<typeof engineStore>,
-  options: Wwt3dControlOptions = {}
 ) {
+
+
+  const enter3dHooks: Wwt3dHook[] = [];
+  const exit3dHooks: Wwt3dHook[] = [];
+
+  /** run `hook` once the move into 3D has finished */
+  function onEnter3d(hook: Wwt3dHook) {
+    if (!enter3dHooks.includes(hook)) enter3dHooks.push(hook);
+  }
+
+  /** run `hook` once the move back to the saved 2D view has finished */
+  function onExit3d(hook: Wwt3dHook) {
+    if (!exit3dHooks.includes(hook)) exit3dHooks.push(hook);
+  }
 
   let oldBackgroundLayer: string | null = null;
   let oldPosition: {ra: number, dec: number, zoom: number, roll: number} | null = null;
@@ -78,9 +93,9 @@ export function useWwt3dControl(
     get: () => store.backgroundImageset?.get_name() === THREED_VIEW_NAME,
     set: (value: boolean) => {
       if (value) {
-        switchTo3D().then(() => options.on3d?.());
+        switchTo3D().then(() => enter3dHooks.forEach(hook => hook()));
       } else {
-        switchTo2D().then(() => options.on2d?.());
+        switchTo2D().then(() => exit3dHooks.forEach(hook => hook()));
       }
     }
   });
@@ -89,5 +104,19 @@ export function useWwt3dControl(
     in3D.value = !in3D.value;
   }
 
-  return { in3D, toggle3d, switchTo3D, switchTo2D };
+  return { in3D, toggle3d, switchTo3D, switchTo2D, onEnter3d, onExit3d };
+}
+
+/* singleton so we can use it everywhere */
+let control: ReturnType<typeof createWwt3dControl> | null = null;
+export function useWwt3dControl(
+  store: ReturnType<typeof engineStore>,
+  options: Wwt3dControlOptions = {}
+) {
+  if (!control) {
+    control = createWwt3dControl(store);
+  }
+  if (options.on3d) control.onEnter3d(options.on3d);
+  if (options.on2d) control.onExit3d(options.on2d);
+  return control;
 }
