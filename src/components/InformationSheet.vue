@@ -27,7 +27,7 @@
       color="var(--info-sheet-tab-color)"
       slider-color="var(--info-sheet-slider-color)"
       density="compact"
-      align-tabs="end"
+      :align-tabs="props.alignTabs ?? 'end'"
       @keydown.left.prevent="cycleTab(-1)"
       @keydown.right.prevent="cycleTab(1)"
     >
@@ -43,6 +43,7 @@
       </v-tab>
     </v-tabs>
     <v-icon
+      v-if="!stayOpen"
       id="close-text-icon"
       class="control-icon"
       size="large"
@@ -89,6 +90,8 @@ export interface Props {
   pageColor?: string,
   hideUserGuide?: boolean,
   hideTabs?: boolean,
+  stayOpen?: boolean,
+  alignTabs?: 'start' | 'center' | 'end' | 'title',
 }
 </script>
 
@@ -224,6 +227,14 @@ provide(injectionKey, {
 
 
 const props = defineProps<Props>();
+  
+if (props.stayOpen) {
+  showTextSheet.value = true;
+}
+
+watch(() => props.stayOpen, (stayOpen) => {
+  if (stayOpen) showTextSheet.value = true;
+});
 
 watch(() => props.hideUserGuide, (hidden) => {
   if (hidden) tabName.value = tabs.value[0]?.value ?? '';
