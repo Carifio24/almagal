@@ -4,15 +4,14 @@ import { Color, Matrix3d, RenderContext, Vector3d } from "@wwtelescope/engine";
 import { WEBGL } from "./webgl_constants";
 import { CircleShader } from "./shaders";
 
-export function drawPointList(renderContext: RenderContext, opacity: number, cull: boolean, depthMask=false) {
+export function drawPointList(renderContext: RenderContext, opacity: number, cull: boolean, depthMask=true) {
   this._initBuffer(renderContext);
   const gl = renderContext.gl as WebGLRenderingContextBase;
-  const originalDepthMask = gl.getParameter(WEBGL.DEPTH_WRITEMASK);
-  gl.depthMask(depthMask);
   const zero = new Vector3d();
   const matInv = Matrix3d.multiplyMatrix(renderContext.get_world(), renderContext.get_view());
   matInv.invert();
   const cam = Vector3d._transformCoordinate(zero, matInv);
+  this.depthBuffered = false;
   for (const buffer of this._pointBuffers) {
     CircleShader.use(
       renderContext,
@@ -30,5 +29,4 @@ export function drawPointList(renderContext: RenderContext, opacity: number, cul
     );
     gl.drawArrays(WEBGL.POINTS, 0, buffer.count);
   }
-  gl.depthMask(originalDepthMask);
 }

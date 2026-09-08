@@ -726,7 +726,7 @@ const almagalSpreadsheetLayer = useHoverableSpreadsheetLayer(
     name: "ALMAGAL Sources",
     color: "#32CD32",
     markerSize: 7,
-    markerType: "circle",
+    markerType: "gaussian",
     distanceColumn: "dist_ag",
     raUnit: RAUnits.degrees,
     emitNull: true,
@@ -977,7 +977,6 @@ onMounted(() => {
     store.setBackgroundImageByName('GAIA DR2'); // look at the Imagery list on the WWT page to see a list of background names
     WWTControl.singleton.setSolarSystemMinZoom(15000 * 9 / 4);  // min zoom for showing the solar system.
 
-
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -987,7 +986,7 @@ onMounted(() => {
       layer?.set_scaleFactor(20);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore Circle hacking
-      // layer.prepVertexBuffer(WWTControl.singleton.renderContext, layer.get_opacity()); layer.pointList.draw = drawPointList;
+      layer.prepVertexBuffer(WWTControl.singleton.renderContext, layer.get_opacity()); layer.pointList.draw = drawPointList.bind(layer.pointList);
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }
