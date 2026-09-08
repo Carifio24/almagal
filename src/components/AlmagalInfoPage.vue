@@ -26,6 +26,21 @@
         </li>
       </ul>
     </div>
+    <a
+      class="learn-more-card"
+      href="https://www.almagal.org"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span class="learn-more-text">
+        Learn More About ALMAGAL
+      </span>
+      <img
+        src="https://battersby-physics.media.uconn.edu/wp-content/uploads/sites/2230/2020/09/ALMAGAL_Logo1_SM.jpg"
+        alt="ALMAGAL logo"
+        class="learn-more-logo"
+      />
+    </a>
   </div>
 </template>
 
@@ -50,6 +65,8 @@ import almagalImage from '@/assets/almagal-header.png';
 
 .ag-info {
   font-size: 1rem;
+  display: flex;
+  flex-direction: column;
   
 }
 .almagal-logo {
@@ -70,5 +87,45 @@ import almagalImage from '@/assets/almagal-header.png';
 
 .almagal-logo .almagal-logo-img {
   height: calc(0.6 * var(--size));
+}
+
+/* was the "Learn More" button in the top-right of the view; now the link out
+   to almagal.org at the foot of this page. Styles came over with it. */
+.learn-more-card {
+
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  padding: 0.5em 0.75em;
+
+  text-align: left;
+  font-size: 0.95em;
+  font-weight: bold;
+
+  backdrop-filter: blur(10px);
+  background-color: rgba(0, 0, 0, 0.364);
+
+  border: 1px solid white;
+  border-radius: 8px;
+  cursor: pointer;
+
+  width: fit-content;
+  max-width: 250px;
+  pointer-events: auto;
+
+  align-self:center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.learn-more-text {
+  flex: 1;
+}
+
+.learn-more-logo {
+  height: 2.75em;
+  width: auto;
+  border-radius: 4px;
 }
 </style>

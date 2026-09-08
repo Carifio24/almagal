@@ -167,37 +167,9 @@
             </div>
           </div>
           <div id="right-buttons">
-            <button
-              v-if="!showTour"
-              class="learn-more-card"
-              @click="showTour = !showTour"
-            >
-              <span class="learn-more-text">
-                Learn More About ALMAGAL
-              </span>
-              <img
-                src="https://battersby-physics.media.uconn.edu/wp-content/uploads/sites/2230/2020/09/ALMAGAL_Logo1_SM.jpg"
-                alt="ALMAGAL logo"
-                class="learn-more-logo"
-              />
-            </button>
             <div class="d-flex flex-row flex-wrap ga-4 pa-2 bunch-o-buttons">
             </div>
 
-            <div class="hovered-source-info">
-              <span v-if="hoveredSource">Currently hovering: {{ hoveredSource.aid }}</span>
-              <span v-else-if="selectedAlmagalSource">Last selected: {{ selectedAlmagalSource.aid }}</span>
-              <span v-else>Currently hovering: none</span>
-              <v-btn
-                v-if="hoveredSource || selectedAlmagalSource"
-                style="pointer-events: auto;"
-                class="ml-2"
-                density="compact"
-                icon="mdi-information-slab-circle-outline"
-                @click="openSourceInfo"
-              >
-              </v-btn>
-            </div>
             <template v-if="!showTour">
               <v-btn
                 v-if="showAllInView && !in3dView"
@@ -207,13 +179,13 @@
               >
                 Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
               </v-btn>
-              <div
+              <!-- <div
                 v-else
                 class="blur-background  py-2 px-4 rounded"
                 style="max-width: 220px;"
               >
                 Zoom in to download full images
-              </div>
+              </div> -->
             </template>
             <div
               v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView && !showTour"
@@ -269,14 +241,20 @@
                  and zero-width for the other two layouts. -->
             <div id="tour-float-slot"></div>
             <div class="control-bar">
-              <v-btn
-                class="blur-button"
-                variant="outlined"
-                :prepend-icon="spreadsheetVisible ? 'mdi-eye-off' : 'mdi-eye'"
-                @click="spreadsheetVisible = !spreadsheetVisible"
-              >
-                {{ spreadsheetVisible ? 'Hide Catalog' : 'Show Catalog' }}
-              </v-btn>
+              <div class="hovered-source-info">
+                <span v-if="hoveredSource">Currently hovering: {{ hoveredSource.aid }}</span>
+                <span v-else-if="selectedAlmagalSource">Last selected: {{ selectedAlmagalSource.aid }}</span>
+                <span v-else>Currently hovering: none</span>
+                <v-btn
+                  v-if="hoveredSource || selectedAlmagalSource"
+                  style="pointer-events: auto;"
+                  class="ml-2"
+                  density="compact"
+                  icon="mdi-information-slab-circle-outline"
+                  @click="openSourceInfo"
+                >
+                </v-btn>
+              </div>
             </div>
           </div>
           <div
@@ -1894,42 +1872,6 @@ and remember, position:absolute is still a positioned parent, so children can be
   // --v-field-border-opacity: 1 !important;
 }
 
-
-
-.learn-more-card {
-  
-  flex-direction: row;
-  display: flex;
-  align-items: center;
-  gap: 0.75em;
-  padding: 0.5em 0.75em;
-  
-  text-align: left;
-  font-size: 0.95em;
-  font-weight: bold;
-
-  backdrop-filter: blur(10px);
-  background-color: rgba(0, 0, 0, 0.364);
-  
-  border: 1px solid white;
-  border-radius: 8px;
-  cursor: pointer;
-  
-  width: fit-content;
-  max-width: 250px;
-  pointer-events: auto;
-
-}
-
-.learn-more-text {
-  flex: 1;
-}
-
-.learn-more-logo {
-  height: 2.75em;
-  width: auto;
-  border-radius: 4px;
-}
 
 /* the comparison controls, now inside the info sheet's Settings tab rather
    than spread across the bottom of the view */
