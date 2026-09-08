@@ -113,7 +113,6 @@ export function useSpreadsheetLayer(
     raUnit = RAUnits.hours,
   } = options;
 
-  let originalRows: string[][] | null = null;
   let originalLayer: SpreadSheetLayer | null = null;
   let header: string[] = [];
 
@@ -182,10 +181,9 @@ export function useSpreadsheetLayer(
     l.set_opacity(1);
     console.log("Created spreadsheet layer", l.get_name());
     originalLayer = l;
-    const table = l.get__table();
-    originalRows = table.rows.slice(); // make a copy
-    header = table.header;
     layer.value = l;
+    const table = l.get__table();
+    header = table.header;
     return l;
   }
 

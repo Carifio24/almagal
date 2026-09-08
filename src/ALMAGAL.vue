@@ -727,7 +727,7 @@ const almagalSpreadsheetLayer = useHoverableSpreadsheetLayer(
     name: "ALMAGAL Sources",
     color: "#32CD32",
     markerSize: 7,
-    markerType: "point",
+    markerType: "gaussian",
     distanceColumn: "dist_ag",
     raUnit: RAUnits.degrees,
     emitNull: true,
@@ -937,7 +937,6 @@ function createSunLayer() {
     if (!layer) {
       throw new Error("Failed to create sun layer");
     }
-    layer.set_plotType(PlotTypes.gaussian);
     layer.set_opacity(1);
     layer.set_markerScale(MarkerScales.screen);
     store.applyTableLayerSettings({
@@ -983,8 +982,9 @@ onMounted(() => {
 
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
+      console.log(layer);
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
-      layer?.set_plotType(PlotTypes.gaussian);
+      console.log(colorCol);
       layer?.set_scaleFactor(20);
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
@@ -1052,6 +1052,10 @@ let first3dswap = true;
 function setup3DView() {
   if (!first3dswap) {
     return;
+  }
+  const almagalLayer = almagalSpreadsheetLayer.layer.value;
+  if (almagalLayer) {
+    almagalLayer.dirty = true;
   }
   // the swtich has already set the initial view and mode, now we want to zoom out and above the galactic plane
   store.gotoRADecZoom({
