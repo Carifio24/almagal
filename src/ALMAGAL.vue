@@ -967,6 +967,8 @@ onMounted(() => {
 
 
   store.waitForReady().then(async () => {
+    PointList.prototype.draw = drawPointList;
+
     // keeping it in RA/Dec for convenience. Easier to check if point are in view and to go to a matching 3D view
     store.applySetting(["galacticMode", true]); /* moves might be wierd, but convenient coord sys */
     store.applySetting(["solarSystemCosmos", false]);
@@ -978,11 +980,11 @@ onMounted(() => {
     store.setBackgroundImageByName('GAIA DR2'); // look at the Imagery list on the WWT page to see a list of background names
     WWTControl.singleton.setSolarSystemMinZoom(15000 * 9 / 4);  // min zoom for showing the solar system.
 
-    PointList.prototype.draw = drawPointList;
 
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
+      layer?.set_plotType(PlotTypes.gaussian);
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }

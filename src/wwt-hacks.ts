@@ -13,14 +13,21 @@ export function drawPointList(renderContext: RenderContext, opacity: number, cul
   const matInv = Matrix3d.multiplyMatrix(renderContext.get_world(), renderContext.get_view());
   matInv.invert();
   const cam = Vector3d._transformCoordinate(zero, matInv);
-  for (const buffer in this._pointBuffers) {
+  for (const buffer of this._pointBuffers) {
     CircleShader.use(
       renderContext,
       buffer.vertexBuffer,
       Color.fromArgb(255 * opacity, 255, 255, 255),
       this.depthBuffered,
       this.jNow,
-      0);
+      0,
+      cam,
+      this.scale * renderContext.height / 960,
+      this.minSize,
+      this.showFarSide,
+      this.sky,
+      this._masked ? this._mask.buffer : null,
+    );
     gl.drawArrays(WEBGL.POINTS, 0, buffer.count);
   }
   gl.depthMask(originalDepthMask);
