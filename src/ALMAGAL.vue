@@ -743,7 +743,8 @@ const tourDrawerLayout = computed<"bottom" | "push" | "float">(() => {
    whatever the view has left once the info sheet has taken its share. */
 const tourDrawerWidth = computed(() => tourDrawerLayout.value === "push" ? "34%" : "50%");
 const showSearch = ref(false);
-const showSplashScreen = ref(false);
+const queryShowSplash = searchParams.get("splash")?.toLowerCase() !== 'false';
+const showSplashScreen = ref(queryShowSplash);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
 const almagalBlue = ref("#306C9F");
