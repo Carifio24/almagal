@@ -84,6 +84,8 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     const layer = spreadsheet.layer.value;
     if (!layer) return null;
 
+    console.log("HERE");
+
     const pt: ScreenPoint = { x: event.offsetX, y: event.offsetY };
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment

@@ -568,7 +568,6 @@ import {
   Coordinates,
   Color,
   SpreadSheetLayer,
-  PointList,
 } from "@wwtelescope/engine";
 // scale types: linear, log, power, sqrt, histogramEqualization
 import { ScaleTypes, RAUnits, AltTypes, AltUnits, MarkerScales, PlotTypes } from "@wwtelescope/engine-types";
@@ -727,7 +726,7 @@ const almagalSpreadsheetLayer = useHoverableSpreadsheetLayer(
     name: "ALMAGAL Sources",
     color: "#32CD32",
     markerSize: 7,
-    markerType: "gaussian",
+    markerType: "circle",
     distanceColumn: "dist_ag",
     raUnit: RAUnits.degrees,
     emitNull: true,
@@ -966,7 +965,6 @@ onMounted(() => {
 
 
   store.waitForReady().then(async () => {
-    PointList.prototype.draw = drawPointList;
 
     // keeping it in RA/Dec for convenience. Easier to check if point are in view and to go to a matching 3D view
     store.applySetting(["galacticMode", true]); /* moves might be wierd, but convenient coord sys */
@@ -982,10 +980,14 @@ onMounted(() => {
 
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
-      console.log(layer);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error Attaching items to window for convenience
+      window.layer = layer; window.wwt = WWTControl.singleton; window.rc = window.wwt.renderContext;
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
-      console.log(colorCol);
       layer?.set_scaleFactor(20);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore Circle hacking
+      // layer.prepVertexBuffer(WWTControl.singleton.renderContext, layer.get_opacity()); layer.pointList.draw = drawPointList;
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }
