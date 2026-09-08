@@ -59,6 +59,8 @@
         :accent-color="almagalBlue"
         :highlight-color="almagalOrange"
         :loaded="!isLoading"
+        @tour="startTour"
+        @explore="startExploring"
       />
 
 
@@ -758,6 +760,16 @@ function openSourceInfo() {
    reads `sidePanel`, which also sets the container's flex direction, so the two
    cannot disagree. */
 const showTour = ref(false);
+/* The splash screen's two doors. The tour drawer mounts TourPlayer only once it
+   opens, and TourPlayer runs step 1's setup on mount -- so `showTour` is the
+   whole of "start the tour", and leaving it false is the whole of "let me
+   explore", which drops into the app with nothing set up for it. */
+function startTour() {
+  showTour.value = true;
+}
+function startExploring() {
+  showTour.value = false;
+}
 const tourDrawerLayout = computed<"bottom" | "push" | "float">(() => {
   if (!sidePanel.value) return "bottom";
   /* 700, not 600: 'float' shares the overlay's height with #top-content, so an
