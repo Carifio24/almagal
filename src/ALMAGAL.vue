@@ -212,29 +212,7 @@
             </button>
             <div class="d-flex flex-row flex-wrap ga-4 pa-2 bunch-o-buttons">
             </div>
-            <div
-              v-if="!in3dView && !showTour"
-            >
-              <div
-                v-for="layer in almagalWtml.imagesetLayers"
 
-                :key="layer.id.toString()"
-                class="layer-list__item elevation-2 my-2"
-              >
-                <ImagesetItem
-                  style="color: black"
-                  :imageset="store.imagesetStateForLayer(layer.id.toString())!"
-                  instant
-                  :crange="{min: -0.001, max: 1}"
-                  log-stretch-slider
-                  @reset="() => setFitsLayerSettings(layer.id.toString(), store, FITS_LAYER_SETTINGS_RESET)"
-                >
-                  <template #name>
-                    Image Settings
-                  </template>
-                </ImagesetItem>
-              </div>
-            </div>
             <div class="hovered-source-info">
               <span v-if="hoveredSource">Currently hovering: {{ hoveredSource.aid }}</span>
               <span v-else-if="selectedAlmagalSource">Last selected: {{ selectedAlmagalSource.aid }}</span>
@@ -270,6 +248,7 @@
               v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView && !showTour"
               class="layer-list"
             >
+              <!-- need to keep these so we can navigate to ones we have downloaded-->
               <div
                 v-for="layer in [...almagalSourceLayers.values()]"
                 :key="layer.id.toString()"
@@ -407,7 +386,10 @@
               eager
               elevation="0"
             >
-              <v-expansion-panel title="Filters" value="filters">
+              <v-expansion-panel title="Filters" value="filters"
+                                 class="mb-2" 
+                                 tile 
+              >
                 <v-expansion-panel-text>
                   <fieldset
                     class="almagal-filterset"
@@ -458,7 +440,66 @@
                   </fieldset>
                 </v-expansion-panel-text>
               </v-expansion-panel>
-              <v-expansion-panel title="Background Survey" value="background">
+              <v-expansion-panel value="imageset-settings" class="mb-2">
+                <v-expansion-panel-title class="ga-2 py-4">
+                  <div class="d-flex flex-column flex-1-1">
+                    <div class="mb-2">
+                      ALMAGAL Imageset Settings
+                    </div>
+                    <ImagesetOpacity
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      class="pr-8"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                    />
+                  </div>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <div class="d-flex flex-column ga-6">
+                    <ImagesetColormap
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                    >
+                      <template #default="{on, colormaps}">
+                        <!-- on = {modelValue, 'onUpdate:modelVaue'} to simulate the v-model -->
+                        <v-select
+                          v-bind="on"
+                          :items="colormaps"
+                          item-title="desc"
+                          item-value="wwt"
+                          hide-details
+                          density="compact"
+                          label="Colormap"
+                          variant="underlined"
+                        />
+                      </template>
+                    </ImagesetColormap>
+                    <!-- note - the sliders are logarithmic even if the stretch is not -->
+                    <ImagesetStretch
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                      log-stretch-slider
+                      :crange="{min: -0.001, max: 1}"
+                    >
+                      <template #stretch="{on, scaletypes}">
+                        <v-select
+                          v-bind="on"
+                          :items="scaletypes"
+                          item-title="desc"
+                          item-value="wwt"
+                          hide-details
+                          density="compact"
+                          label="Stretch"
+                          variant="underlined"
+                        />
+                      </template>
+                    </ImagesetStretch>
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel title="Background Survey" value="background" class="mb-2">
                 <v-expansion-panel-text>
                   <v-select
                     v-model="foregroundImage"
@@ -487,7 +528,7 @@
                   />
                 </v-expansion-panel-text>
               </v-expansion-panel>
-              <v-expansion-panel title="Comparison images" value="comparison">
+              <v-expansion-panel title="Comparison images" value="comparison" class="mb-2">
                 <v-expansion-panel-text>
                   <template v-if="in3dView">
                     <p class="settings-hint">
@@ -616,6 +657,9 @@ import ImagesetItem from "./components/ImagesetItem.vue";
 import RangeNumberInputs from "./components/RangeNumberInputs.vue";
 import Wwt3dSwitch from "./components/Wwt3dSwitch.vue";
 import TourPlayer from "./tour/TourPlayer.vue";
+import ImagesetOpacity from "./components/imageset_settings/ImagesetOpacity.vue";
+import ImagesetColormap from "./components/imageset_settings/ImagesetColormap.vue";
+import ImagesetStretch from "./components/imageset_settings/ImagesetStretch.vue";
 /* Catalog, filters and view flags shared with the tour; see almagal_state.ts */
 import {
   CLUMP_TYPES,

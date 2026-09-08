@@ -221,12 +221,13 @@ const props = defineProps({
   hideVisibility: { type: Boolean, required: false, default: false },
   hideReset: { type: Boolean, required: false, default: false },
   noOpen: { type: Boolean, required: false, default: false },
+  holdOpen: { type: Boolean, required: false, default: false },
 });
 
 const store = engineStore();
 
 const hasFocus = ref(false);
-const isSelected = ref(false);
+const isSelected = ref(props.holdOpen);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const isInView = computed((): boolean => {
