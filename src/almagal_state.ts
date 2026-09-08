@@ -109,7 +109,7 @@ export const USER_GUIDE_TAB = "user-guide";
 export type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB
   | typeof SETTINGS_TAB | typeof USER_GUIDE_TAB;
 export const showInfoSheet = ref(false);
-export const infoSheetTab = ref<InfoSheetTab>(ALMAGAL_TAB);
+export const infoSheetTab = ref<InfoSheetTab>(SETTINGS_TAB);
 
 export const spreadsheetVisible = ref(true);
 export const showFilters = ref(false);

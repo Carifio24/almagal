@@ -42,6 +42,8 @@
         <h3>{{ _tabName.title }}</h3>
       </v-tab>
     </v-tabs>
+    <!-- v-else to preserve space for tabs -->
+    <div v-else-if="showCloseButton" class="cds-info-sheet-tabs" style="height: 1em;"></div>
     <v-icon
       v-if="!stayOpen || showCloseButton"
       id="close-text-icon"
@@ -88,10 +90,13 @@ export interface Props {
   bgColor?: string,
   /** each InfoPage's background. Transparent by default, so `bgColor` shows through. */
   pageColor?: string,
-  hideUserGuide?: boolean,
+  /** hide the tab bar, preserves some space for the close button if present */
   hideTabs?: boolean,
+  /** ignores the v-model which doesn't do anything anyway  */
   stayOpen?: boolean,
+  /** move tabs left, right or center */
   alignTabs?: 'start' | 'center' | 'end' | 'title',
+  /** show the close button even with stayOpen true */
   showCloseButton?: boolean,
 }
 </script>
@@ -237,9 +242,7 @@ watch(() => props.stayOpen, (stayOpen) => {
   if (stayOpen) showTextSheet.value = true;
 });
 
-watch(() => props.hideUserGuide, (hidden) => {
-  if (hidden) tabName.value = tabs.value[0]?.value ?? '';
-});
+
 
 const cssVars = computed(() => {
   return {

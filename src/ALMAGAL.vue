@@ -326,6 +326,7 @@
         page-color="transparent"
         :stay-open="forceInfoSheetOpen"
         show-close-button
+        :hide-tabs="infoSheetTab === 'settings'"
       >
         <!-- each page registers its own tab, in this order -->
         <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
@@ -339,7 +340,7 @@
         </InfoPage>
         
         <InfoPage v-if="inInfoGroup" title="ALMAGAL">
-          ALMAGAL Survey Informational blurb
+          <almagal-info-page />
         </InfoPage>
 
         <!-- The UserGuide itself is an InfoPage
@@ -655,10 +656,11 @@ import TourPlayer from "./tour/TourPlayer.vue";
 import ImagesetOpacity from "./components/imageset_settings/ImagesetOpacity.vue";
 import ImagesetColormap from "./components/imageset_settings/ImagesetColormap.vue";
 import ImagesetStretch from "./components/imageset_settings/ImagesetStretch.vue";
+import AlmagalInfoPage from "./components/AlmagalInfoPage.vue";
 /* Catalog, filters and view flags shared with the tour; see almagal_state.ts */
 import {
   CLUMP_TYPES,
-  FITS_LAYER_SETTINGS,
+  FITS_LAYER_SETTINGS,  
   FITS_LAYER_SETTINGS_RESET,
   almagalColumnRanges,
   almagalSourceLayers,
@@ -1133,6 +1135,7 @@ function view3dFromGlonGlatDistkpc(glon: number, glat: number, dist_kpc: number)
 
 /* singleton wwt 3d controller */
 import { useWwt3dControl } from "./composables/wwt3dControl";
+import { A } from "vue-router/dist/index-BQLwgiyK.js";
 const { in3D: in3dView, switchTo2D } = useWwt3dControl(store);
 
 watch(in3dView, (in3d) => {
@@ -1298,6 +1301,16 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
 </script>
 
 <style lang="less">
+@font-face {
+  font-family: "Highway Gothic Narrow";
+  src: url("../assets/HighwayGothicNarrow.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Segoe UI Semibold";
+  src: url("../assets/Segoe UI Semibold.ttf") format("truetype");
+  font-weight: 600;
+}
 
 // #app is a column flex container with two children:
 // #main-content and #bottom-drawer.
