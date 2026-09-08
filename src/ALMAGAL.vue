@@ -25,6 +25,7 @@
         :layout="tourDrawerLayout"
         location="bottom left"
         :side-drawer-width="tourDrawerWidth"
+        float-max-height="100vh"
       >
         <div class="tour-sheet">
           <v-btn
@@ -748,7 +749,9 @@ const showSplashScreen = ref(queryShowSplash);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
 const almagalBlue = ref("#306C9F");
+const almagalBlueDarker = ref("#002f5c");
 const almagalOrange = ref("#FC9954");
+const almagalOrangeDarker = ref("##c05000");
 // all panels are open by default.
 const settingsPanels = ref<("filters" | "background" | "comparison")[]>(['filters', 'background', 'comparison']);
 watch(settingsPanels, (newVal) => {
@@ -1187,6 +1190,8 @@ const cssVars = computed(() => {
   return {
     "--almagal-blue": almagalBlue.value,
     "--almagal-orange": almagalOrange.value,
+    "--almagal-blue-darker": almagalBlueDarker.value,
+    "--almagal-orange-darker": almagalOrangeDarker.value,
   };
 });
 
@@ -1394,7 +1399,7 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
   overflow-y: auto;
   padding: 1em 1.25em;
   color: #e6e6e6;
-  background-color: rgb(var(--v-theme-surface));
+  background-color: var(--almagal-blue-darker);
 }
 
 /* Teleported into #bottom-content, so it is an ordinary flex item in the
