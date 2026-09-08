@@ -3,7 +3,7 @@
    just import and call them. */
 import { ref, shallowRef } from "vue";
 import { engineStore } from "@wwtelescope/engine-pinia";
-import type { ImageSetLayer } from "@wwtelescope/engine";
+import type { ImageSetLayer, SpreadSheetLayer } from "@wwtelescope/engine";
 import { ScaleTypes } from "@wwtelescope/engine-types";
 import {
   almagalSources,
@@ -68,15 +68,17 @@ const initialFilterSpec = new Map(
 export const filterSpec = ref<AlmaGalSourceFilterSpec>(initialFilterSpec);
 
 // the use of a ref here means the function will always reflect the latest filter spec.
-export function filterFunction(row: Record<string, string>) {
+export function filterFunction(row: string[], header: string[], _index: number, _layer: SpreadSheetLayer): boolean {
+  const typeIndex = header.indexOf("type");
   for (const [column, range] of filterSpec.value) {
-    const value = +row[column];
+    const columnIndex = header.indexOf(column);
+    const value = +row[columnIndex];
     if (Number.isNaN(value)) return false; // empty value or something else -> false
     if (range.min != null && value < range.min) return false;
     if (range.max != null && value > range.max) return false;
   }
 
-  const ctype = row["type"];
+  const ctype = row[typeIndex];
   if (!clumpTypeFilter.value.includes(ctype)) return false;
 
   return true;

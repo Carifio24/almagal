@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref } from "vue";
 import { engineStore } from "@wwtelescope/engine-pinia";
-import { Color, SpreadSheetLayer } from "@wwtelescope/engine";
+import { Color, SpreadSheetLayer, SpreadSheetLayerFilter } from "@wwtelescope/engine";
 import { AltTypes, MarkerScales, PlotTypes } from "@wwtelescope/engine-types";
 import { RAUnits, AltUnits } from "@wwtelescope/engine-types";
 export type MarkerType = "gaussian" | "point" | "circle";
@@ -114,11 +114,9 @@ export function useSpreadsheetLayer(
   } = options;
 
   let originalRows: string[][] | null = null;
-  let originalNamedRows: NamedRow[] | null = null;
   let originalLayer: SpreadSheetLayer | null = null;
   let header: string[] = [];
-  const filterMask: boolean[] = [];
-  
+
   function getColumnIndex(col: string): number | undefined {
     const index = header.findIndex(h => h.toLowerCase() === col.toLowerCase());
     return index === -1 ? undefined : index;
@@ -187,37 +185,21 @@ export function useSpreadsheetLayer(
     const table = l.get__table();
     originalRows = table.rows.slice(); // make a copy
     header = table.header;
-    originalNamedRows = originalRows.map(row => {
-      const named: NamedRow = {};
-      header.forEach((h, i) => { named[h] = row[i]; });
-      return named;
-    });
-    filterMask.length = 0; // clear the array inplace https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
-    originalNamedRows.forEach(row => filterMask.push(filter(row)));
     layer.value = l;
     return l;
   }
 
-  type FilterFunction = (row: Record<string, string>) => boolean;
-
   // A single, user-customizable filter. Defaults to keeping every row; the
   // consumer overrides it via setFilter().
-  let filter: FilterFunction = () => true;
-  function setFilter(f: (row: Record<string, string>) => boolean) {
+  let filter: SpreadSheetLayerFilter = () => true;
+  function setFilter(f: SpreadSheetLayerFilter) {
     filter = f;
   }
 
   // Apply the current filter to the table.
   function applyFilter() {
     if (!originalLayer) return;
-    if (!originalRows || !originalNamedRows) return;
-    const t = originalLayer.get__table();
-    filterMask.length = 0;
-    originalNamedRows.forEach(row => filterMask.push(filter(row)));
-    // Test against the named view, but keep the positional row the table needs.
-    t.rows = originalRows.filter((_, i) => filter(originalNamedRows![i]));
-    originalLayer.set__table(t);
-    originalLayer.dirty = true; // mark layer as dirty to trigger re-render
+    originalLayer.set_filter(filter, false);
   }
 
   function setVisible(visible: boolean) {
@@ -228,5 +210,5 @@ export function useSpreadsheetLayer(
   function show() { setVisible(true); }
   function hide() { setVisible(false); }
 
-  return { createLayer, layer, applyFilter, setFilter, filterMask, show, hide, setVisible, getColumnIndex };
+  return { createLayer, layer, applyFilter, setFilter, show, hide, setVisible, getColumnIndex };
 }

@@ -985,10 +985,10 @@ onMounted(() => {
     await almagalSpreadsheetLayer.createLayer().then(layer => {
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
       layer?.set_plotType(PlotTypes.gaussian);
+      layer?.set_scaleFactor(20);
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }
-
     });
     almagalSpreadsheetLayer.applyFilter();
     sourcesInView.setup();
