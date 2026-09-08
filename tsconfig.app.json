@@ -45,6 +45,7 @@
       "es6",
       "ES2015",
       "ES2017",
+      "ES2018.Promise"
     ],
     
     // recommended by https://www.typescriptlang.org/docs/handbook/modules/guides/choosing-compiler-options.html#im-using-a-bundler

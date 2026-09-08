@@ -43,7 +43,7 @@
       </v-tab>
     </v-tabs>
     <v-icon
-      v-if="!stayOpen"
+      v-if="!stayOpen || showCloseButton"
       id="close-text-icon"
       class="control-icon"
       size="large"
@@ -92,6 +92,7 @@ export interface Props {
   hideTabs?: boolean,
   stayOpen?: boolean,
   alignTabs?: 'start' | 'center' | 'end' | 'title',
+  showCloseButton?: boolean,
 }
 </script>
 

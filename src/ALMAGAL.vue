@@ -69,7 +69,10 @@
       >
         <div id="top-content">
           <!-- old left-buttons / right-buttons layout preserved below -->
-          <div id="left-buttons">
+          <div
+            v-if="!showTour"
+            id="left-buttons"
+          >
             <div 
               class="source-controls"
               :class="{
@@ -194,6 +197,7 @@
           </div>
           <div id="right-buttons">
             <button
+              v-if="!showTour"
               class="learn-more-card"
               @click="showTour = !showTour"
             >
@@ -209,7 +213,7 @@
             <div class="d-flex flex-row flex-wrap ga-4 pa-2 bunch-o-buttons">
             </div>
             <div
-              v-if="!in3dView"
+              v-if="!in3dView && !showTour"
             >
               <div
                 v-for="layer in almagalWtml.imagesetLayers"
@@ -245,23 +249,25 @@
               >
               </v-btn>
             </div>
-            <v-btn
-              v-if="showAllInView && !in3dView"
-              class="blur-button"
-              variant="outlined"
-              @click="showAllSourcesInView"
-            >
-              Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
-            </v-btn>
-            <div 
-              v-else 
-              class="blur-background  py-2 px-4 rounded"
-              style="max-width: 220px;"
-            >
-              Zoom in to download full images
-            </div>
+            <template v-if="!showTour">
+              <v-btn
+                v-if="showAllInView && !in3dView"
+                class="blur-button"
+                variant="outlined"
+                @click="showAllSourcesInView"
+              >
+                Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
+              </v-btn>
+              <div
+                v-else
+                class="blur-background  py-2 px-4 rounded"
+                style="max-width: 220px;"
+              >
+                Zoom in to download full images
+              </div>
+            </template>
             <div
-              v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView"
+              v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView && !showTour"
               class="layer-list"
             >
               <div
@@ -369,6 +375,7 @@
         :bg-color="almagalBlue"
         page-color="transparent"
         :stay-open="forceInfoSheetOpen"
+        show-close-button
       >
         <!-- each page registers its own tab, in this order -->
         <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
@@ -625,11 +632,18 @@ import {
   filterSpec,
   foregroundImage,
   foregroundOpacity,
+  infoSheetTab,
   pendingSourceIids,
   selectedAlmagalSource,
   showFilters,
+  showInfoSheet,
   spreadsheetVisible,
+  ALMAGAL_TAB,
+  SETTINGS_TAB,
+  SOURCE_INFORMATION_TAB,
+  USER_GUIDE_TAB,
   type FilterField,
+  type InfoSheetTab,
 } from "./almagal_state";
 
 import { useWtmlLoader } from "./composables/useWtmlLoader";
@@ -692,18 +706,12 @@ const props = withDefaults(defineProps<WwtPlaygroundProps>(), {
 });
 
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
-const showInfoSheet = ref(false);
 const forceInfoSheetOpen = ref(true);
-// Each info sheet registers a tab when it is available in the DOM
-const SOURCE_INFORMATION_TAB = "source-information";
-const ALMAGAL_TAB = "almagal";
-const SETTINGS_TAB = "settings";
-const USER_GUIDE_TAB = "user-guide";
-type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB | typeof SETTINGS_TAB
-  | typeof USER_GUIDE_TAB;
+/* `showInfoSheet`, `infoSheetTab` and the tab names live in almagal_state.ts,
+   since the tour opens and closes the sheet per step. Each info sheet
+   registers its tab when it is available in the DOM. */
 // the pages that mount together, and so show up as each other's tabs
 const infoGroupTabs: InfoSheetTab[] = [ALMAGAL_TAB, USER_GUIDE_TAB];
-const infoSheetTab = ref<InfoSheetTab>(ALMAGAL_TAB);
 const inInfoGroup = computed(() => infoGroupTabs.includes(infoSheetTab.value));
 /* The info button only appears once a clump is hovered or selected, so the
    sheet needs its own way in for settings that have nothing to do with a clump. */

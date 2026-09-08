@@ -10,14 +10,18 @@ import {
   almagalSourceList,
   downloadAlmagalSource,
   foregroundImage,
+  infoSheetTab,
   resetFilters,
   selectedAlmagalSource,
   setFilterRange,
   showFilters,
+  showInfoSheet,
   sourceStretchOverrides,
   spreadsheetVisible,
+  SETTINGS_TAB,
   type BackgroundSurvey,
   type FilterField,
+  type InfoSheetTab,
 } from "../almagal_state";
 
 export function flyTo(raDeg: number, decDeg: number, zoomDeg: number) {
@@ -86,9 +90,19 @@ export function orion() {
   return orionWtml;
 }
 
+function setInfoSheet(tab: InfoSheetTab | null) {
+  if (tab === null) {
+    showInfoSheet.value = false;
+    return;
+  }
+  infoSheetTab.value = tab;
+  showInfoSheet.value = true;
+}
+
 /** Put the app into the starting state for a step. Steps are 1-indexed. */
 export function setupTourStep(n: number) {
   if (n === 1 || n === 2) { // Massive Stars
+    setInfoSheet(null);
     selectedAlmagalSource.value = null;
     showFilters.value = false;
     showBackground("glimpse");
@@ -101,6 +115,7 @@ export function setupTourStep(n: number) {
   }
 
   if (n === 3 || n === 4) { // Massive Star Formation
+    setInfoSheet(null);
     showImagesets(orion());
     selectedAlmagalSource.value = null;
     showFilters.value = false;
@@ -112,6 +127,8 @@ export function setupTourStep(n: number) {
   }
 
   if (n === 5 || n === 6) { // What is the ALMAGAL Survey?
+    // 6 discusses filters
+    setInfoSheet(null);
     showImagesets(orion());
     selectedAlmagalSource.value = null;
     resetFilters();
@@ -123,6 +140,7 @@ export function setupTourStep(n: number) {
   }
 
   if (n === 7 || n === 8) { // Information on the data
+    setInfoSheet(SETTINGS_TAB);
     showImagesets(orion());
     resetFilters();
     spreadsheetVisible.value = true;
