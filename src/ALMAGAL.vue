@@ -80,35 +80,6 @@
               }"
             >
               <div class="d-flex flex-column align-start ga-2">
-                <wwt-3d-switch
-                  @3d="setup3DView"
-                >
-                  <template #default="{ onClick}">
-                    <!-- <v-btn
-                      variant="outlined"
-                      size="small"
-                      class="blur-button"
-                      @click="onClick"
-                    >
-                      {{ in3dView ? "Switch to 2D" : "Switch to 3D" }}
-                    </v-btn> -->
-                    <div class="d-flex align-center">
-                      <!-- <div>2D</div> -->
-                      <v-switch
-                        :model-value="in3dView"
-                        inset
-                        append-icon="mdi-video-3d"
-                        true-icon="mdi-video-3d"
-                        prepend-icon="mdi-video-2d"
-                        false-icon="mdi-video-2d"
-                        hide-details
-                        density="compact"
-                        @click="onClick"
-                      />
-                      <!-- <div>3D</div> -->
-                    </div>
-                  </template>
-                </wwt-3d-switch>
                 <div
                   v-if="!in3dView"
                   class="d-flex align-center ga-2"
@@ -501,6 +472,28 @@
               </v-expansion-panel>
               <v-expansion-panel title="Background Survey" value="background" class="mb-2">
                 <v-expansion-panel-text>
+                  <wwt-3d-switch
+                    class="mb-4"
+                    @3d="setup3DView"
+                  >
+                    <template #default="{ onClick}">
+                      <div class="d-flex align-center">
+                        <!-- <div>2D</div> -->
+                        <v-switch
+                          :model-value="in3dView"
+                          inset
+                          append-icon="mdi-video-3d"
+                          true-icon="mdi-video-3d"
+                          prepend-icon="mdi-video-2d"
+                          false-icon="mdi-video-2d"
+                          hide-details
+                          density="compact"
+                          @click="onClick"
+                        />
+                        <!-- <div>3D</div> -->
+                      </div>
+                    </template>
+                  </wwt-3d-switch>
                   <v-select
                     v-model="foregroundImage"
                     class="almagal-v-select mb-4"
@@ -512,6 +505,7 @@
                     label="Background survey"
                     density="compact"
                     variant="underlined"
+                    :disabled="in3dView"
                   />
                   <p class="settings-hint">
                     Opacity of {{ foregroundImageLabel }} (foreground image) over the backgroun GAIA DR2 image.
@@ -525,6 +519,7 @@
                     density="compact"
                     prepend-icon="mdi-opacity"
                     aria-label="Background survey opacity"
+                    :disabled="in3dView"
                   />
                 </v-expansion-panel-text>
               </v-expansion-panel>
@@ -1151,19 +1146,24 @@ watch(showTour, (open) => {
   }
 });
 
-let first3dswap = false;
+let first3dswap = true;
 function setup3DView() {
   if (!first3dswap) {
     return;
   }
   // the swtich has already set the initial view and mode, now we want to zoom out and above the galactic plane
+  const initialTo = {
+    "raRad": -6.2204406298475154,
+    "decRad": 0.09487913429030448
+  };
   store.gotoRADecZoom({
-    raRad: -(store.raRad + Math.PI / 2),
-    decRad: -(store.decRad + 23.5 * D2R), // tilt up by 23.5 degrees to get above the galactic plane
+    // raRad: -(store.raRad + Math.PI / 2),
+    // decRad: -(store.decRad + 23.5 * D2R), // tilt up by 23.5 degrees to get above the galactic plane
+    ...initialTo,
     zoomDeg: 8 * 1000 * 206265,
     rollRad: 62.9 * Math.PI / 180,
     instant: false,
-    duration: 4,
+    duration: 3,
   }).then(() => {
     const [glon, glat] = Coordinates.j2000toGalactic(store.raRad / D2R, store.decRad / D2R);
     console.log("Current glon, glat:", glon, glat);
