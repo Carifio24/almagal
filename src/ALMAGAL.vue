@@ -69,7 +69,7 @@
         <div id="top-content">
           <!-- old left-buttons / right-buttons layout preserved below -->
           <div id="left-buttons">
-            <div 
+            <div
               class="source-controls"
               :class="{
                 'flex-column': showFilters,
@@ -91,7 +91,7 @@
                     </v-btn>
                   </template>
                 </wwt-3d-switch>
-                <v-tooltip 
+                <v-tooltip
                   text="Filter sources"
                   :location="showFilters ? 'right' : 'bottom'"
                 >
@@ -316,8 +316,8 @@
             >
               Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
             </v-btn>
-            <div 
-              v-else 
+            <div
+              v-else
               class="blur-background  py-2 px-4 rounded"
               style="max-width: 220px;"
             >
@@ -568,6 +568,7 @@ import {
   Coordinates,
   Color,
   SpreadSheetLayer,
+  PointList,
 } from "@wwtelescope/engine";
 // scale types: linear, log, power, sqrt, histogramEqualization
 import { ScaleTypes, RAUnits, AltTypes, AltUnits, MarkerScales, PlotTypes } from "@wwtelescope/engine-types";
@@ -624,6 +625,7 @@ import {
 } from "./almagal_utils";
 import AlmaGalSourceInfoDisplay from "./components/AlmaGalSourceInfoDisplay.vue";
 import { useSpreadsheetLayer } from "./composables/useSpreadsheetLayer";
+import { drawPointList } from "./wwt-hacks";
 
 type CameraParams = Omit<GotoRADecZoomParams, "instant">;
 export interface WwtPlaygroundProps {
@@ -729,9 +731,9 @@ const almagalSpreadsheetLayer = useHoverableSpreadsheetLayer(
     distanceColumn: "dist_ag",
     raUnit: RAUnits.degrees,
     emitNull: true,
-    onHover: (row, index) => { 
+    onHover: (row, index) => {
       if (spreadsheetVisible.value) {
-        hoveredSource.value = row as ALMAGalSource | null; 
+        hoveredSource.value = row as ALMAGalSource | null;
       }
     },
     onClick: (row) => {
@@ -976,13 +978,15 @@ onMounted(() => {
     store.setBackgroundImageByName('GAIA DR2'); // look at the Imagery list on the WWT page to see a list of background names
     WWTControl.singleton.setSolarSystemMinZoom(15000 * 9 / 4);  // min zoom for showing the solar system.
 
+    PointList.prototype.draw = drawPointList;
+
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }
-        
+
     });
     almagalSpreadsheetLayer.applyFilter();
     sourcesInView.setup();
@@ -1784,24 +1788,24 @@ and remember, position:absolute is still a positioned parent, so children can be
 
 
 .learn-more-card {
-  
+
   flex-direction: row;
   display: flex;
   align-items: center;
   gap: 0.75em;
   padding: 0.5em 0.75em;
-  
+
   text-align: left;
   font-size: 0.95em;
   font-weight: bold;
 
   backdrop-filter: blur(10px);
   background-color: rgba(0, 0, 0, 0.364);
-  
+
   border: 1px solid white;
   border-radius: 8px;
   cursor: pointer;
-  
+
   width: fit-content;
   max-width: 250px;
   pointer-events: auto;
