@@ -1055,10 +1055,6 @@ function setup3DView() {
   if (!first3dswap) {
     return;
   }
-  const almagalLayer = almagalSpreadsheetLayer.layer.value;
-  if (almagalLayer) {
-    almagalLayer.dirty = true;
-  }
   // the swtich has already set the initial view and mode, now we want to zoom out and above the galactic plane
   store.gotoRADecZoom({
     raRad: -(store.raRad + Math.PI / 2),

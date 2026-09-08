@@ -197,7 +197,7 @@ export function useSpreadsheetLayer(
   // Apply the current filter to the table.
   function applyFilter() {
     if (!originalLayer) return;
-    originalLayer.set_filter(filter, false);
+    // originalLayer.set_filter(filter, false);
   }
 
   function setVisible(visible: boolean) {
