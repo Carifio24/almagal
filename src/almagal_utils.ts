@@ -55,6 +55,11 @@ export interface ALMAGalSource {
     dec:         number;
     has_photo:  boolean;
     photo_url:  string;
+    /* added for compatability with the almagalSourceList which has these
+     * we will get rid of these eventually i think
+     */
+    type: string;
+    included: boolean;
 }
 
 export enum DistFlag {
