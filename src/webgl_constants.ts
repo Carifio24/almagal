@@ -1,4 +1,5 @@
 // Magic constants defined by WebGL.
+/* eslint-disable */
 
 export namespace WEBGL {
   export const ACTIVE_ATTRIBUTE_MAX_LENGTH = 35722;
