@@ -1,14 +1,35 @@
+/* eslint-disable */
 // @ts-nocheck
 
 import { CameraParameters, Color, Matrix3d, RenderContext } from "@wwtelescope/engine";
 import { WEBGL } from "./webgl_constants";
-import { createFragmentShader, createShader, createVertexShader, createProgram, displayProgramLinkError, displayShaderCompileError } from "./webgl_utils";
+import { createFragmentShader, createVertexShader, createProgram, displayProgramLinkError, displayShaderCompileError } from "./webgl_utils";
 
 export class CircleShader {
 
   static initialized = false;
+  static _frag: WebGLShader;
+  static _vert: WebGLShader;
+  static _prog: WebGLProgram;
+  static posLoc = 0;
+  static colorLoc = 0;
+  static pointSizeLoc = 0;
+  static timeLoc = 0;
+  static showLoc = 0;
+  static mvMatrixLoc = 0;
+  static pMatrixLoc = 0;
+  static nowLoc = 0;
+  static cameraPosLoc = 0;
+  static decayLoc = 0;
+  static scaleLoc = 0;
+  static minSizeLoc = 0;
+  static skyLoc = 0;
+  static showFarSideLoc = 0;
+  static lineColorLoc = 0;
 
   static init(renderContext: RenderContext) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error `gl` exists on `RenderContext`
     const gl: WebGLRenderingContextBase = renderContext.gl;
 
     const fragShaderText = `\
@@ -113,18 +134,19 @@ export class CircleShader {
     CircleShader.initialized = true;
   }
 
-  static use(renderContext: RenderContext,
-             vertex: WebGLBuffer,
-             lineColor: Color,
-             zBuffer: boolean,
-             jNow: number,
-             decay: number,
-             camera: CameraParameters,
-             scale: number,
-             minSize: number,
-             showFarSide: boolean,
-             sky: booleam,
-             mask: WebGLBuffer,
+  static use(
+    renderContext: RenderContext,
+    vertex: WebGLBuffer,
+    lineColor: Color,
+    zBuffer: boolean,
+    jNow: number,
+    decay: number,
+    camera: CameraParameters,
+    scale: number,
+    minSize: number,
+    showFarSide: boolean,
+    sky: booleam,
+    mask: WebGLBuffer,
   ) {
 
     const gl = renderContext.gl as WebGLRenderingContextBase;

@@ -2,9 +2,10 @@ import { WEBGL } from "./webgl_constants";
 
 type ShaderType = typeof WEBGL.VERTEX_SHADER | typeof WEBGL.FRAGMENT_SHADER;
 
-export function createShader(gl: WebGLRenderingContextBase,
-                             src: string,
-                             type: ShaderType
+export function createShader(
+  gl: WebGLRenderingContextBase,
+  src: string,
+  type: ShaderType
 ): WebGLShader | null {
   const shader = gl.createShader(type);
   if (!shader) {

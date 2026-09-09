@@ -62,9 +62,6 @@ function buildCsv(points: [number, number][] | [number, number, number][]): stri
   throw new Error("Invalid points format for buildCsv");
 }
 
-/** A row keyed by column name, e.g. `{ ra: "1.23", dec: "4.56", mass: "750" }`. */
-type NamedRow = Record<string, string>;
-
 interface CoordinateJson extends Record<string, any> {
   ra: number;
   dec: number;

@@ -1,3 +1,4 @@
+/* eslint-disable */
 // @ts-nocheck
 
 import { Color, Matrix3d, RenderContext, Vector3d } from "@wwtelescope/engine";
