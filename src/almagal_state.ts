@@ -13,9 +13,15 @@ import {
 } from "./almagal_utils";
 import { setFitsLayerSettings } from "./wwt-helpers";
 import type { Colormaps } from "./wwt-colormaps/colormaps";
+import tempo from "@/assets/tempo";
 import almagalClumps from "./assets/almagal_clump_props_WWT.json";
 
 export const CLUMP_TYPES = ["isolated", "empty", "simple", "rich", "unknown"];
+
+const getIndex = (type: string) => {
+  const index = CLUMP_TYPES.indexOf(type);
+  return Math.max(index, 0);
+};
 
 // merge almagalClumps "type" and an "included field" based on iid/INTERNAL_ID
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,11 +29,12 @@ function mergedCatalog(sources: ALMAGalSource[], clumps: any[]): ( ALMAGalSource
   const clumpMap = new Map(clumps.map(clump => [clump.INTERNAL_ID, clump]));
   return sources.map(source => {
     const clump = clumpMap.get(source.iid);
+    const type = clump ? clump.TYPE : "unknown";
     return {
       ...source,
-      type: clump ? clump.TYPE : "unknown",
+      type,
       included: !!clump,
-      color: clump ? "#32CD32" : "#999999", // color sources with clumps green, others gray
+      color: tempo[getIndex(type)],
     };
   });
 }
