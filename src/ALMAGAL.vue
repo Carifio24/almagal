@@ -979,9 +979,6 @@ onMounted(() => {
 
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error Attaching items to window for convenience
-      window.layer = layer; window.wwt = WWTControl.singleton; window.rc = window.wwt.renderContext;
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
       layer?.set_scaleFactor(20);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
