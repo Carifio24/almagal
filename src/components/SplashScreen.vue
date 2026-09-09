@@ -35,7 +35,7 @@
             <p class="highlight">
               <img :src="almagalImage" /> ALMAGAL
             </p>
-            <p>Understanding how stars form in our galaxy {{ xs }}</p>
+            <p>Understanding how stars form in our galaxy</p>
           </div>
         </div>
 
