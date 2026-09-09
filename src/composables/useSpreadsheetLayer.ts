@@ -174,7 +174,7 @@ export function useSpreadsheetLayer(
       l.set_altUnit(distanceUnit);
       l.set_showFarSide(true);
     }
-    l.set_markerScale(MarkerScales.screen);
+    l.set_markerScale(MarkerScales.world);
     l.set_color(Color.fromHex(color));
     l.set_scaleFactor(markerSize);
     l.set_plotType(MARKER_TYPE_MAP[markerType]);
