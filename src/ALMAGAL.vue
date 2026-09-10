@@ -678,6 +678,7 @@ import {
 } from "./almagal_utils";
 import AlmaGalSourceInfoDisplay from "./components/AlmaGalSourceInfoDisplay.vue";
 import { useSpreadsheetLayer } from "./composables/useSpreadsheetLayer";
+import { drawPointList } from "./wwt-hacks";
 
 type CameraParams = Omit<GotoRADecZoomParams, "instant">;
 export interface WwtPlaygroundProps {
@@ -813,13 +814,13 @@ const almagalSpreadsheetLayer = useHoverableSpreadsheetLayer(
     name: "ALMAGAL Sources",
     color: "#32CD32",
     markerSize: 7,
-    markerType: "point",
+    markerType: "gaussian",
     distanceColumn: "dist_ag",
     raUnit: RAUnits.degrees,
     emitNull: true,
-    onHover: (row, index) => { 
+    onHover: (row, index) => {
       if (spreadsheetVisible.value) {
-        hoveredSource.value = row as ALMAGalSource | null; 
+        hoveredSource.value = row as ALMAGalSource | null;
       }
     },
     onClick: (row) => {
@@ -1023,7 +1024,6 @@ function createSunLayer() {
     if (!layer) {
       throw new Error("Failed to create sun layer");
     }
-    layer.set_plotType(PlotTypes.gaussian);
     layer.set_opacity(1);
     layer.set_markerScale(MarkerScales.screen);
     store.applyTableLayerSettings({
@@ -1053,6 +1053,7 @@ onMounted(() => {
 
 
   store.waitForReady().then(async () => {
+
     // keeping it in RA/Dec for convenience. Easier to check if point are in view and to go to a matching 3D view
     store.applySetting(["galacticMode", true]); /* moves might be wierd, but convenient coord sys */
     store.applySetting(["solarSystemCosmos", false]);
@@ -1067,10 +1068,13 @@ onMounted(() => {
     // wait for spreadhseet to load
     await almagalSpreadsheetLayer.createLayer().then(layer => {
       const colorCol = almagalSpreadsheetLayer.getColumnIndex("color");
+      layer?.set_scaleFactor(20);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore Circle hacking
+      layer.prepVertexBuffer(WWTControl.singleton.renderContext, layer.get_opacity()); layer.pointList.draw = drawPointList.bind(layer.pointList);
       if (layer && colorCol) {
         layer.set_colorMapColumn(colorCol);
       }
-        
     });
     almagalSpreadsheetLayer.applyFilter();
     sourcesInView.setup();

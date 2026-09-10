@@ -49,9 +49,15 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     let minDist = Infinity;
     let closestIndex = -1;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error This works
+    const layer = spreadsheet.layer.value; const table = layer.get__table(); const tableRows = table.rows; const header = table.header;
+
     // brute-force search through rows
-    rows.forEach((row, i) => {
-      const dist = distance(targetRaRad, targetDecRad, row.ra * D2R, row.dec * D2R);
+    tableRows.forEach((row, i) => {
+      const ra = +row[layer?.get_lngColumn() ?? 0];
+      const dec = +row[layer?.get_latColumn() ?? 1];
+      const dist = distance(targetRaRad, targetDecRad, ra * D2R, dec * D2R);
       if (dist < minDist) {
         minDist = dist;
         closestIndex = i;
@@ -67,8 +73,9 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
     const pixelDist = Math.sqrt((pt.x - screenPoint.x) ** 2 + (pt.y - screenPoint.y) ** 2);
     if (pixelDist >= pixelThreshold) return null;
 
-    // respect the spreadsheet's current filter, if one has been set
-    if (spreadsheet.filterMask[closestIndex] === false) return null;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error This works
+    if (!layer._filter(tableRows[closestIndex], header)) return null;
 
     return { row: closest, index: closestIndex };
   }

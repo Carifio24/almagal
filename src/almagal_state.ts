@@ -3,7 +3,7 @@
    just import and call them. */
 import { ref, shallowRef } from "vue";
 import { engineStore } from "@wwtelescope/engine-pinia";
-import type { ImageSetLayer } from "@wwtelescope/engine";
+import type { ImageSetLayer, SpreadSheetLayer } from "@wwtelescope/engine";
 import { ScaleTypes } from "@wwtelescope/engine-types";
 import {
   almagalSources,
@@ -13,9 +13,15 @@ import {
 } from "./almagal_utils";
 import { setFitsLayerSettings } from "./wwt-helpers";
 import type { Colormaps } from "./wwt-colormaps/colormaps";
+import tempo from "@/assets/tempo";
 import almagalClumps from "./assets/almagal_clump_props_WWT.json";
 
 export const CLUMP_TYPES = ["isolated", "empty", "simple", "rich", "unknown"];
+
+const getIndex = (type: string) => {
+  const index = CLUMP_TYPES.indexOf(type);
+  return Math.max(index, 0);
+};
 
 // merge almagalClumps "type" and an "included field" based on iid/INTERNAL_ID
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,11 +29,12 @@ function mergedCatalog(sources: ALMAGalSource[], clumps: any[]): ( ALMAGalSource
   const clumpMap = new Map(clumps.map(clump => [clump.INTERNAL_ID, clump]));
   return sources.map(source => {
     const clump = clumpMap.get(source.iid);
+    const type = clump ? clump.TYPE : "unknown";
     return {
       ...source,
-      type: clump ? clump.TYPE : "unknown",
+      type,
       included: !!clump,
-      color: clump ? "#32CD32" : "#999999", // color sources with clumps green, others gray
+      color: tempo[getIndex(type)],
     };
   });
 }
@@ -68,15 +75,17 @@ const initialFilterSpec = new Map(
 export const filterSpec = ref<AlmaGalSourceFilterSpec>(initialFilterSpec);
 
 // the use of a ref here means the function will always reflect the latest filter spec.
-export function filterFunction(row: Record<string, string>) {
+export function filterFunction(row: string[], header: string[], _index: number, _layer: SpreadSheetLayer): boolean {
+  const typeIndex = header.indexOf("type");
   for (const [column, range] of filterSpec.value) {
-    const value = +row[column];
+    const columnIndex = header.indexOf(column);
+    const value = +row[columnIndex];
     if (Number.isNaN(value)) return false; // empty value or something else -> false
     if (range.min != null && value < range.min) return false;
     if (range.max != null && value > range.max) return false;
   }
 
-  const ctype = row["type"];
+  const ctype = row[typeIndex];
   if (!clumpTypeFilter.value.includes(ctype)) return false;
 
   return true;
