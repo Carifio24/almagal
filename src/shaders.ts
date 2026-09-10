@@ -32,25 +32,46 @@ export class CircleShader {
     // @ts-expect-error `gl` exists on `RenderContext`
     const gl: WebGLRenderingContextBase = renderContext.gl;
 
+    const webGL2 = gl instanceof WebGL2RenderingContext;
+    const derivatives = webGL2 || gl.getExtension("OES_standard_derivatives");
+    const borderWidth = derivatives ? "fwidth(r)" : "0.012";
+    const extensionDeclaration = (derivatives && !webGL2) ? "#extension GL_OES_standard_derivatives : enable" : "";
+    const versionDeclaration = webGL2 ? "#version 300 es" : "";
+    const fragInKeyword = webGL2 ? "in" : "varying";
+    const fragOutDeclaration = webGL2 ? "out vec4 fragColor;" : "";
+    const fragOutVar = webGL2 ? "fragColor" : "gl_FragColor";
+    const vertexInKeyword = webGL2 ? "in" : "attribute";
+    const vertexOutKeyword = webGL2 ? "out" : "varying";
+
     const fragShaderText = `\
+      ${versionDeclaration}
+      ${extensionDeclaration}
       precision mediump float;
-      varying vec4 vColor;
+      ${fragInKeyword} vec4 vColor;
+      ${fragOutDeclaration}
+
       void main() {
         vec2 p = gl_PointCoord - vec2(0.5);
         float r = length(p);
-        float a = smoothstep(0.50, 0.46, r);
+        float borderWidth = ${borderWidth};
+
         float core = smoothstep(0.50, 0.30, r);
         vec3 col = vColor.rgb * mix(0.85, 1.15, core);
-        gl_FragColor = vec4(col, a * vColor.a);
+        float borderMix = smoothstep(0.40 - borderWidth, 0.40 + borderWidth, r);
+        col = mix(col, vec3(0.0), borderMix);
+        float alpha = 1.0 - smoothstep(0.50 - borderWidth, 0.50 + borderWidth, r);
+
+        ${fragOutVar} = vec4(col, alpha * vColor.a);
       }
     `;
 
     const vertShaderText = `\
-      attribute vec3 aVertexPosition;
-      attribute vec4 aVertexColor;
-      attribute vec2 aTime;
-      attribute float aPointSize;
-      attribute float aShow;
+      ${versionDeclaration}
+      ${vertexInKeyword} vec3 aVertexPosition;
+      ${vertexInKeyword} vec4 aVertexColor;
+      ${vertexInKeyword} vec2 aTime;
+      ${vertexInKeyword} float aPointSize;
+      ${vertexInKeyword} float aShow;
       uniform mat4 uMVMatrix;
       uniform mat4 uPMatrix;
       uniform float jNow;
@@ -61,7 +82,7 @@ export class CircleShader {
       uniform float sky;
       uniform float showFarSide;
 
-      varying lowp vec4 vColor;
+      ${vertexOutKeyword} lowp vec4 vColor;
 
       void main(void)
       {
