@@ -15,22 +15,18 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from "vue";
 import { engineStore } from '@wwtelescope/engine-pinia';
 import { useWwt3dControl } from "../composables/wwt3dControl";
 
 const store = engineStore();
-
-const model = defineModel<boolean>({ default: false });
 const emits = defineEmits(['3d', '2d']);
 
+/* The app-wide control -- the parent reads the same `in3D`, so there is no
+   local copy of the state to keep in sync. */
 const { in3D, toggle3d } = useWwt3dControl(store, {
   on3d: () => emits('3d'),
   on2d: () => emits('2d'),
 });
-
-// keep any v-model bound by the parent in sync with the actual store-derived state
-watch(in3D, (value) => { model.value = value; }, { immediate: true });
 </script>
 
 <style>

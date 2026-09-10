@@ -86,7 +86,7 @@ export function useHoverableSpreadsheetLayer<T extends RaDecPair>(
 
     const pt: ScreenPoint = { x: event.offsetX, y: event.offsetY };
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+     
     // @ts-expect-error `positions` does exit
     const positions: Vector3d[] = layer.positions;
 

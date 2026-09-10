@@ -32,27 +32,41 @@
             id="splash-screen-text"
             class="mb-2"
           >
-            <p>See the </p>
             <p class="highlight">
-              The Phantom Galaxy
+              <img :src="almagalImage" /> ALMAGAL
             </p>
+            <p>Understanding how stars form in our galaxy</p>
           </div>
         </div>
 
         <!-- <SplashGesture /> -->
 
-        <div>
+        <div class="splash-buttons">
           <v-btn
-            class="splash-get-started"
-            :color="accentColor"
-            :density="(xs || isLandscape) ? 'compact' : 'compact'"
-            :size="width < 250 ? 'large' : 'x-large'"
-            variant="elevated"
-            rounded="lg"
-            @click="closeSplashScreen"
-            @keyup.enter="closeSplashScreen"
+            class="splash-get-started mt-4"
+            :color="highlightColor"
+            :density="(xs || isLandscape) ? 'compact' : 'comfortable'"
+            :size="(width < 250 || short) ? 'large' : 'x-large'"
+            variant="flat"
+            elevation="10"
+            rounded="2"
+            @click="tourOption"
+            @keyup.enter="tourOption"
           >
-            {{ loaded ? 'Get Started' : 'Loading...' }}
+            Give me a guided tour
+          </v-btn>
+          <v-btn
+            class="splash-get-started my-2"
+            :color="highlightColor"
+            :density="(xs || isLandscape) ? 'compact' : 'comfortable'"
+            :size="(width < 250 || short) ? 'large' : 'x-large'"
+            variant="flat"
+            elevation="10"
+            rounded="2"
+            @click="exploreOption"
+            @keyup.enter="exploreOption"
+          >
+            Let me explore on my own
           </v-btn>
         </div>
 
@@ -83,10 +97,11 @@
 import { computed } from 'vue';
 import { FocusTrap } from "focus-trap-vue";
 import { useDisplay } from 'vuetify';
+import almagalImage from '@/assets/almagal-header.png';
 
 const {width, xs, height } = useDisplay();
 const isLandscape = computed(() => width.value > height.value * 1.25);
-
+const short = computed(() => height.value < 400);
 export interface Props {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cssVars?: any;
@@ -121,17 +136,45 @@ function closeSplashScreen() {
   }
 }
 
+const emits = defineEmits(['tour', 'explore']);
+
+function tourOption() {
+  if (props.loaded) {
+    showSplashScreen.value = false;
+    emits('tour');
+  }
+}
+
+function exploreOption() {
+  if (props.loaded) {
+    showSplashScreen.value = false;
+    emits('explore');
+  }
+}
+
 
 </script>
 
 
 <style scoped lang="less">
 
+@font-face {
+  font-family: "Highway Gothic Narrow";
+  src: url("../assets/HighwayGothicNarrow.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Segoe UI Semibold";
+  src: url("../assets/Segoe UI Semibold.ttf") format("truetype");
+  font-weight: 600;
+}
+
 #splash-overlay {
   align-items: center;
   justify-content: center;
   font-size: 2em;
   transition: width 0.5s, height 0.5s;
+  --size: min(10vmin,80px);
 }
 
 #splash-overlay > :deep(.v-overlay__scrim) {
@@ -166,9 +209,10 @@ function closeSplashScreen() {
   .background {
     position: fixed;
     inset: 0;
-    background-image: url('../assets/image-1.png');
-    background-size: cover;
-    background-repeat: no-repeat;
+    // background-image: url('../assets/image-1.png');
+    // background-size: cover;
+    // background-repeat: no-repeat;
+    background-color: var(--accent-color);
     contain: strict;
     z-index: -1;
   }
@@ -188,8 +232,8 @@ function closeSplashScreen() {
   padding-bottom: 1rem;
   padding-inline: 2rem;
 
-  border-radius: var(--border-radius);
-  border: min(1.2vw, 0.9vh) solid var(--highlight-color);
+  border-radius: 0; // var(--border-radius);
+  border: 2px solid var(--highlight-color) ; //min(1.2vw, 0.9vh) solid var(--highlight-color);
   overflow: auto;
   font-family: "Highway Gothic Narrow", sans-serif;
 
@@ -210,6 +254,17 @@ function closeSplashScreen() {
     color: var(--highlight-color);
     text-transform: uppercase;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    font-size: var(--size);
+    color: white;
+    font-family: "Segoe UI Semibold";
+    
+    > img {
+      height: calc(var(--size) * 1.2);
+    }
   }
 
 
@@ -241,14 +296,15 @@ function closeSplashScreen() {
     // in the grid, the text is in the 2nd column
     display: flex;
     flex-direction: column;
-    line-height: 1.5;
-
+    line-height: 2;
+    font-size: min(1em, calc(0.75 * var(--size)));
   }
 
   .splash-get-started {
-    border: 2px solid white;
-    font-size: 0.5em;
+    // border: 2px solid white;
+    font-size: 0.75em;
     font-weight: bold !important;
+    text-transform: none;
   }
 
   #splash-screen-guide {
@@ -311,7 +367,7 @@ function closeSplashScreen() {
     overflow: hidden;
 
   #splash-screen-text {
-    line-height: 1;
+    line-height: 1.2;
   }
 
   .splash-get-started {
@@ -343,6 +399,12 @@ function closeSplashScreen() {
   #artemis-large-logo {
     height: 200px;
   }
+}
+
+.splash-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 </style>

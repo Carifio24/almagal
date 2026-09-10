@@ -110,6 +110,16 @@ export const selectedAlmagalSource = ref<ALMAGalSource | null>(null);
    every source. A cut left here is picked up when that layer loads. */
 export const sourceStretchOverrides = new Map<ALMAGalSource["iid"], { vmin: number; vmax: number }>();
 
+
+export const SOURCE_INFORMATION_TAB = "source-information";
+export const ALMAGAL_TAB = "almagal";
+export const SETTINGS_TAB = "settings";
+export const USER_GUIDE_TAB = "user-guide";
+export type InfoSheetTab = typeof SOURCE_INFORMATION_TAB | typeof ALMAGAL_TAB
+  | typeof SETTINGS_TAB | typeof USER_GUIDE_TAB;
+export const showInfoSheet = ref(false);
+export const infoSheetTab = ref<InfoSheetTab>(SETTINGS_TAB);
+
 export const spreadsheetVisible = ref(true);
 export const showFilters = ref(false);
 

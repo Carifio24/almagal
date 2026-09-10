@@ -25,6 +25,7 @@
         :layout="tourDrawerLayout"
         location="bottom left"
         :side-drawer-width="tourDrawerWidth"
+        float-max-height="100vh"
       >
         <div class="tour-sheet">
           <v-btn
@@ -55,9 +56,11 @@
       <!-- This contains the splash screen content -->
       <SplashScreen
         v-model="showSplashScreen"
-        :accent-color="accentColor"
-        :highlight-color="accentColor2"
+        :accent-color="almagalBlue"
+        :highlight-color="almagalOrange"
         :loaded="!isLoading"
+        @tour="startTour"
+        @explore="startExploring"
       />
 
 
@@ -68,67 +71,40 @@
       >
         <div id="top-content">
           <!-- old left-buttons / right-buttons layout preserved below -->
-          <div id="left-buttons">
-            <div
+          <div
+            v-if="!showTour"
+            id="left-buttons"
+          >
+            <div 
               class="source-controls"
               :class="{
                 'flex-column': showFilters,
               }"
             >
-              <div class="d-flex flex-row ga-2">
-                <wwt-3d-switch
-                  v-model="in3dView"
-                  @3d="setup3DView"
-                >
-                  <template #default="{ in3d, onClick}">
-                    <v-btn
-                      variant="outlined"
-                      size="small"
-                      class="blur-button"
-                      @click="onClick"
-                    >
-                      {{ in3d ? "Switch to 2D" : "Switch to 3D" }}
-                    </v-btn>
-                  </template>
-                </wwt-3d-switch>
-                <v-tooltip
-                  text="Filter sources"
-                  :location="showFilters ? 'right' : 'bottom'"
-                >
-                  <template #activator="p">
-                    <v-btn
-                      :icon="showFilters ? 'mdi-close' : 'mdi-filter'"
-                      v-bind="p.props"
-                      size="small"
-                      color="surface-variant"
-                      @click="showFilters = !showFilters"
-                    />
-                  </template>
-                </v-tooltip>
+              <div class="d-flex flex-column align-start ga-2">
                 <div
                   v-if="!in3dView"
-                  class="d-flex"
+                  class="d-flex align-center ga-2"
                 >
                   <v-tooltip
-                    v-if="!showSearch"
                     text="Search for source"
                     location="bottom"
                   >
                     <template #activator="p">
                       <v-btn
                         v-bind="p.props"
-                        icon="mdi-magnify"
+                        :icon="showSearch ? 'mdi-close' : 'mdi-magnify'"
                         size="small"
                         color="surface-variant"
-                        @click="showSearch = true"
+                        @click="showSearch = !showSearch"
                       />
                     </template>
                   </v-tooltip>
-                  <template v-else>
+                  <template v-if="showSearch">
                     <v-autocomplete
                       v-if="almagalSourceList"
                       v-model="selectedAlmagalSource"
-                      class="almagal-v-select"
+                      class="almagal-v-select on-canvas"
                       :items="almagalSourceList"
                       item-title="iid"
                       item-value="iid"
@@ -137,66 +113,20 @@
                       label="ALMAGAL Source"
                       :loading="pendingSourceIids.length > 0"
                       autofocus
-                    />
-                    <v-btn
-                      icon="mdi-close"
-                      size="small"
-                      variant="outlined"
-                      class="blur-button"
-                      @click="showSearch = false"
+                      density="compact"
                     />
                   </template>
                 </div>
-                <div
-                  v-if="!in3dView"
-                  class="d-flex"
-                >
-                  <v-tooltip
-                    v-if="!showBackgroundPicker"
-                    text="Background survey"
-                    location="bottom"
-                  >
-                    <template #activator="p">
-                      <v-btn
-                        v-bind="p.props"
-                        icon="mdi-image-multiple"
-                        size="small"
-                        color="surface-variant"
-                        aria-label="Choose background survey"
-                        @click="showBackgroundPicker = true"
-                      />
-                    </template>
-                  </v-tooltip>
-                  <template v-else>
-                    <v-select
-                      v-model="foregroundImage"
-                      class="almagal-v-select"
-                      :items="foregroundImageOptions"
-                      item-title="label"
-                      item-value="value"
-                      hide-details
-                      autofocus
-                      label="Background survey"
-                    />
-                    <v-btn
-                      icon="mdi-close"
-                      size="small"
-                      variant="outlined"
-                      class="blur-button"
-                      @click="showBackgroundPicker = false"
-                    />
-                  </template>
-                </div>
-                <!-- the way in to the Settings tab, which is otherwise only
-                     reachable once a clump is hovered or selected -->
+
+
                 <v-tooltip
-                  text="Comparison images"
+                  text="View settings"
                   location="bottom"
                 >
                   <template #activator="p">
                     <v-btn
                       v-bind="p.props"
-                      icon="mdi-cog"
+                      icon="mdi-tune-vertical"
                       size="small"
                       color="surface-variant"
                       aria-label="Comparison image settings"
@@ -204,129 +134,66 @@
                     />
                   </template>
                 </v-tooltip>
-              </div>
-              <fieldset
-                v-if="showFilters"
-                class="almagal-filterset"
-              >
-                <!-- mass, lum, lm, tdust, dist_ag, tbol -->
-                <div
-                  v-for="field in filterFields"
-                  :key="field"
-                  class="filter-slider"
+
+                <v-tooltip
+                  text="User guide"
+                  location="bottom"
                 >
-                  <label>
-                    <span v-html="filterFieldLabels[field]"></span>&nbsp;
-                    <span
-                      v-if="hoveredSource"
-                      class="fiducial-display"
-                    >
-                      {{ formatSigFigs(hoveredSource[field]) }}
-                    </span>
-                    <RangeNumberInputs
-                      :model-value="filterSpec.get(field)!"
-                      :min="almagalColumnRanges[field].min"
-                      :max="almagalColumnRanges[field].max"
-                      :fiducial="hoveredSource ? hoveredSource[field] : undefined"
-                      :steps="500"
-                      log
-                      @update:model-value="(val) => filterSpec.set(field, val)"
+                  <template #activator="p">
+                    <v-btn
+                      v-bind="p.props"
+                      icon="mdi-help"
+                      size="small"
+                      color="surface-variant"
+                      aria-label="Open the user guide"
+                      @click="openUserGuide"
                     />
-                  </label>
-                </div>
-                <hr class="mt-3" />
-                <div class="clump-type-filter">
-                  <span>Clump type</span>
-                  <div class="clump-type-options">
-                    <label
-                      v-for="type in CLUMP_TYPES"
-                      :key="type"
-                      class="clump-type-option"
-                    >
-                      <input
-                        v-model="clumpTypeFilter"
-                        type="checkbox"
-                        :value="type"
-                      />
-                      {{ type }}
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
+                  </template>
+                </v-tooltip>
+                <v-tooltip
+                  text="tour"
+                  location="bottom"
+                >
+                  <template #activator="p">
+                    <v-btn
+                      v-bind="p.props"
+                      icon="mdi-transit-connection-variant"
+                      size="small"
+                      color="surface-variant"
+                      aria-label="Start the tour"
+                      @click="showTour = !showTour"
+                    />
+                  </template>
+                </v-tooltip>
+              </div>
             </div>
           </div>
           <div id="right-buttons">
-            <button
-              class="learn-more-card"
-              @click="showTour = !showTour"
-            >
-              <span class="learn-more-text">
-                Learn More About ALMAGAL
-              </span>
-              <img
-                src="https://battersby-physics.media.uconn.edu/wp-content/uploads/sites/2230/2020/09/ALMAGAL_Logo1_SM.jpg"
-                alt="ALMAGAL logo"
-                class="learn-more-logo"
-              />
-            </button>
             <div class="d-flex flex-row flex-wrap ga-4 pa-2 bunch-o-buttons">
             </div>
-            <div
-              v-if="!in3dView"
-            >
-              <div
-                v-for="layer in almagalWtml.imagesetLayers"
 
-                :key="layer.id.toString()"
-                class="layer-list__item elevation-2 my-2"
-              >
-                <ImagesetItem
-                  style="color: black"
-                  :imageset="store.imagesetStateForLayer(layer.id.toString())!"
-                  instant
-                  :crange="{min: -0.001, max: 1}"
-                  log-stretch-slider
-                  @reset="() => setFitsLayerSettings(layer.id.toString(), store, FITS_LAYER_SETTINGS_RESET)"
-                >
-                  <template #name>
-                    Image Settings
-                  </template>
-                </ImagesetItem>
-              </div>
-            </div>
-            <div class="hovered-source-info">
-              <span v-if="hoveredSource">Currently hovering: {{ hoveredSource.aid }}</span>
-              <span v-else-if="selectedAlmagalSource">Last selected: {{ selectedAlmagalSource.aid }}</span>
-              <span v-else>Currently hovering: none</span>
+            <template v-if="!showTour">
               <v-btn
-                v-if="hoveredSource || selectedAlmagalSource"
-                style="pointer-events: auto;"
-                class="ml-2"
-                density="compact"
-                icon="mdi-information-slab-circle-outline"
-                @click="showInfoSheet = !showInfoSheet"
+                v-if="showAllInView && !in3dView"
+                class="blur-button"
+                variant="outlined"
+                @click="showAllSourcesInView"
               >
+                Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
               </v-btn>
-            </div>
-            <v-btn
-              v-if="showAllInView && !in3dView"
-              class="blur-button"
-              variant="outlined"
-              @click="showAllSourcesInView"
-            >
-              Get {{ sourcesInView.count }} source{{ sourcesInView.count > 1 ? 's' : '' }} in view
-            </v-btn>
+              <!-- <div
+                v-else
+                class="blur-background  py-2 px-4 rounded"
+                style="max-width: 220px;"
+              >
+                Zoom in to download full images
+              </div> -->
+            </template>
             <div
-              v-else
-              class="blur-background  py-2 px-4 rounded"
-              style="max-width: 220px;"
-            >
-              Zoom in to download full images
-            </div>
-            <div
-              v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView"
+              v-if="(almagalSourceLayers.size > 0 || pendingSourceIids.length > 0 || selectedAlmagalSource) && !in3dView && !showTour"
               class="layer-list"
             >
+              <!-- need to keep these so we can navigate to ones we have downloaded-->
               <div
                 v-for="layer in [...almagalSourceLayers.values()]"
                 :key="layer.id.toString()"
@@ -376,14 +243,20 @@
                  and zero-width for the other two layouts. -->
             <div id="tour-float-slot"></div>
             <div class="control-bar">
-              <v-btn
-                class="blur-button"
-                variant="outlined"
-                :prepend-icon="spreadsheetVisible ? 'mdi-eye-off' : 'mdi-eye'"
-                @click="spreadsheetVisible = !spreadsheetVisible"
-              >
-                {{ spreadsheetVisible ? 'Hide Catalog' : 'Show Catalog' }}
-              </v-btn>
+              <div class="hovered-source-info">
+                <span v-if="hoveredSource">Currently hovering: {{ hoveredSource.aid }}</span>
+                <span v-else-if="selectedAlmagalSource">Last selected: {{ selectedAlmagalSource.aid }}</span>
+                <span v-else>Currently hovering: none</span>
+                <v-btn
+                  v-if="hoveredSource || selectedAlmagalSource"
+                  style="pointer-events: auto;"
+                  class="ml-2"
+                  density="compact"
+                  icon="mdi-information-slab-circle-outline"
+                  @click="openSourceInfo"
+                >
+                </v-btn>
+              </div>
             </div>
           </div>
           <div
@@ -419,14 +292,24 @@
       id="side-drawer"
       :class="[sidePanel ? 'info-side' : 'info-bottom', showInfoSheet ? 'side-drawer-open' : 'side-drawer-closed']"
     >
+      <!-- 
+      The Information sheet now will create tabs based on the content of the sheet
+       -->
       <InformationSheet
         v-model="showInfoSheet"
         v-model:tab="infoSheetTab"
-        :tab-color="accentColor"
+        tab-color="white"
+        :slider-color="almagalOrange"
+        :accent-color="almagalBlue"
         text-color="#e6e6e6"
+        :bg-color="almagalBlue"
+        page-color="transparent"
+        :stay-open="forceInfoSheetOpen"
+        show-close-button
+        :hide-tabs="infoSheetTab === 'settings'"
       >
         <!-- each page registers its own tab, in this order -->
-        <InfoPage title="Information">
+        <InfoPage v-if="infoSheetTab === SOURCE_INFORMATION_TAB" title="ALMAGAL Source" value="source-information">
           <AlmaGalSourceInfoDisplay
             v-if="currentSource && !in3dView"
             :source="currentSource"
@@ -435,109 +318,270 @@
             Hover over or click one of the green markers to see a clump's properties here.
           </p>
         </InfoPage>
-        <InfoPage title="ALMAGAL">
-          ALMAGAL Survey Informational blurb
+        
+        <InfoPage v-if="inInfoGroup" title="ALMAGAL">
+          <almagal-info-page />
         </InfoPage>
-        <InfoPage title="User Guide">
-          <UserGuide />
-        </InfoPage>
-        <!-- appended last on purpose: the tabs are positional, so inserting
-             above here would shift SETTINGS_TAB and the ALMAGAL blurb's index 1 -->
-        <InfoPage title="Settings">
-          <div class="settings-page">
-            <h3>Background survey</h3>
-            <p class="settings-hint">
-              Opacity of {{ foregroundImageLabel }} (foregroung image) over the backgroung GAIA DR2 image.
-            </p>
-            <v-slider
-              v-model="foregroundOpacity"
-              :min="0"
-              :max="1"
-              :step="0.01"
-              hide-details
-              density="compact"
-              prepend-icon="mdi-opacity"
-              aria-label="Background survey opacity"
-            />
 
-            <h3>Comparison images</h3>
-            <p class="settings-hint">
-              Other telescopes' views of the same star-forming regions. One shows
-              at a time — the collection piles many images onto the same few
-              complexes, so stacking them all just hides them behind each other.
-            </p>
-            <template v-if="in3dView">
-              <p class="settings-hint">
-                Comparison images are only available in the 2D sky view.
-              </p>
-            </template>
-            <template v-else-if="comparisonItems.length > 0">
-              <v-select
-                :model-value="comparisonIndex === -1 ? null : comparisonIndex"
-                :items="comparisonItems"
-                item-title="label"
-                item-value="value"
-                hide-details
-                density="compact"
-                label="Comparison image"
-                variant="outlined"
-                @update:model-value="goToComparison"
-              />
-              <div class="settings-row">
-                <v-btn
-                  variant="text"
-                  icon="mdi-chevron-left"
-                  size="small"
-                  aria-label="Previous comparison image"
-                  @click="stepComparison(-1)"
-                />
-                <v-btn
-                  variant="text"
-                  icon="mdi-chevron-right"
-                  size="small"
-                  aria-label="Next comparison image"
-                  @click="stepComparison(1)"
-                />
-                <v-btn
-                  variant="text"
-                  size="small"
-                  :icon="comparisonsVisible ? 'mdi-eye-off' : 'mdi-eye'"
-                  :aria-label="comparisonsVisible ? 'Hide comparison images' : 'Show comparison images'"
-                  @click="comparisonsVisible = !comparisonsVisible"
-                />
-                <v-btn
-                  variant="text"
-                  size="small"
-                  :icon="showAllComparisons ? 'mdi-layers-triple' : 'mdi-layers-triple-outline'"
-                  :aria-label="showAllComparisons ? 'Show only the selected comparison image' : 'Show all comparison images'"
-                  @click="toggleShowAllComparisons"
-                />
-              </div>
-              <v-slider
-                v-model="comparisonOpacity"
-                :min="0"
-                :max="1"
-                :step="0.01"
-                hide-details
-                density="compact"
-                prepend-icon="mdi-opacity"
-                aria-label="Comparison image opacity"
-              />
-              <p
-                v-if="currentComparisonDescription"
-                class="settings-description"
-              >
-                {{ currentComparisonDescription }}
-              </p>
-            </template>
-            <p
-              v-else
-              class="settings-hint"
+        <!-- The UserGuide itself is an InfoPage
+         so it can be included with wrapping it here.
+         Useful for long componenets that can be easily placed in a different file.
+          -->
+        <UserGuide v-if="inInfoGroup" />
+
+        <InfoPage v-if="infoSheetTab === SETTINGS_TAB" title="Settings">
+          <div class="settings-page">
+            <v-expansion-panels
+              v-model="settingsPanels"
+              variant="accordion"
+              multiple
+              eager
+              elevation="0"
             >
-              Still loading the comparison image collection.
-            </p>
+              <v-expansion-panel title="Filters" value="filters"
+                                 class="mb-2" 
+                                 tile 
+              >
+                <v-expansion-panel-text>
+                  <fieldset
+                    class="almagal-filterset"
+                  >
+                    <!-- mass, lum, lm, tdust, dist_ag, tbol -->
+                    <div
+                      v-for="field in filterFields"
+                      :key="field"
+                      class="filter-slider"
+                    >
+                      <label>
+                        <span v-html="filterFieldLabels[field]"></span>&nbsp;
+                        <span
+                          v-if="hoveredSource"
+                          class="fiducial-display"
+                        >
+                          {{ formatSigFigs(hoveredSource[field]) }}
+                        </span>
+                        <RangeNumberInputs
+                          :model-value="filterSpec.get(field)!"
+                          :min="almagalColumnRanges[field].min"
+                          :max="almagalColumnRanges[field].max"
+                          :fiducial="hoveredSource ? hoveredSource[field] : undefined"
+                          :steps="500"
+                          log
+                          @update:model-value="(val) => filterSpec.set(field, val)"
+                        />
+                      </label>
+                    </div>
+                    <hr class="mt-3" />
+                    <div class="clump-type-filter">
+                      <span>Clump type</span>
+                      <div class="clump-type-options">
+                        <label
+                          v-for="type in CLUMP_TYPES"
+                          :key="type"
+                          class="clump-type-option"
+                        >
+                          <input
+                            v-model="clumpTypeFilter"
+                            type="checkbox"
+                            :value="type"
+                          />
+                          {{ type }}
+                        </label>
+                      </div>
+                    </div>
+                  </fieldset>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel value="imageset-settings" class="mb-2">
+                <v-expansion-panel-title class="ga-2 py-4">
+                  <div class="d-flex flex-column flex-1-1">
+                    <div class="mb-2">
+                      ALMAGAL Imageset Settings
+                    </div>
+                    <ImagesetOpacity
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      class="pr-8"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                    />
+                  </div>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <div class="d-flex flex-column ga-6">
+                    <ImagesetColormap
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                    >
+                      <template #default="{on, colormaps}">
+                        <!-- on = {modelValue, 'onUpdate:modelVaue'} to simulate the v-model -->
+                        <v-select
+                          v-bind="on"
+                          :items="colormaps"
+                          item-title="desc"
+                          item-value="wwt"
+                          hide-details
+                          density="compact"
+                          label="Colormap"
+                          variant="underlined"
+                        />
+                      </template>
+                    </ImagesetColormap>
+                    <!-- note - the sliders are logarithmic even if the stretch is not -->
+                    <ImagesetStretch
+                      v-for="layer in almagalWtml.imagesetLayers"
+                      :key="layer.id.toString()"
+                      :imageset="store.imagesetStateForLayer(layer.id.toString())!"
+                      log-stretch-slider
+                      :crange="{min: -0.001, max: 1}"
+                    >
+                      <template #stretch="{on, scaletypes}">
+                        <v-select
+                          v-bind="on"
+                          :items="scaletypes"
+                          item-title="desc"
+                          item-value="wwt"
+                          hide-details
+                          density="compact"
+                          label="Stretch"
+                          variant="underlined"
+                        />
+                      </template>
+                    </ImagesetStretch>
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel title="Background Survey" value="background" class="mb-2">
+                <v-expansion-panel-text>
+                  <wwt-3d-switch
+                    class="mb-4"
+                    @3d="setup3DView"
+                  >
+                    <template #default="{ onClick}">
+                      <div class="d-flex align-center">
+                        <!-- <div>2D</div> -->
+                        <v-switch
+                          :model-value="in3dView"
+                          inset
+                          append-icon="mdi-video-3d"
+                          true-icon="mdi-video-3d"
+                          prepend-icon="mdi-video-2d"
+                          false-icon="mdi-video-2d"
+                          hide-details
+                          density="compact"
+                          @click="onClick"
+                        />
+                        <!-- <div>3D</div> -->
+                      </div>
+                    </template>
+                  </wwt-3d-switch>
+                  <v-select
+                    v-model="foregroundImage"
+                    class="almagal-v-select mb-4"
+                    :items="foregroundImageOptions"
+                    item-title="label"
+                    item-value="value"
+                    hide-details
+                    autofocus
+                    label="Background survey"
+                    density="compact"
+                    variant="underlined"
+                    :disabled="in3dView"
+                  />
+                  <p class="settings-hint">
+                    Opacity of {{ foregroundImageLabel }} (foreground image) over the backgroun GAIA DR2 image.
+                  </p>
+                  <v-slider
+                    v-model="foregroundOpacity"
+                    :min="0"
+                    :max="1"
+                    :step="0.01"
+                    hide-details
+                    density="compact"
+                    prepend-icon="mdi-opacity"
+                    aria-label="Background survey opacity"
+                    :disabled="in3dView"
+                  />
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+              <v-expansion-panel title="Comparison images" value="comparison" class="mb-2">
+                <v-expansion-panel-text>
+                  <template v-if="in3dView">
+                    <p class="settings-hint">
+                      Comparison images are only available in the 2D sky view.
+                    </p>
+                  </template>
+                  <template v-else-if="comparisonItems.length > 0">
+                    <v-select
+                      :model-value="comparisonIndex === -1 ? null : comparisonIndex"
+                      :items="comparisonItems"
+                      item-title="label"
+                      item-value="value"
+                      hide-details
+                      density="compact"
+                      label="Comparison image"
+                      variant="outlined"
+                      @update:model-value="goToComparison"
+                    />
+                    <div class="settings-row">
+                      <v-btn
+                        variant="text"
+                        icon="mdi-chevron-left"
+                        size="small"
+                        aria-label="Previous comparison image"
+                        @click="stepComparison(-1)"
+                      />
+                      <v-btn
+                        variant="text"
+                        icon="mdi-chevron-right"
+                        size="small"
+                        aria-label="Next comparison image"
+                        @click="stepComparison(1)"
+                      />
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        :icon="comparisonsVisible ? 'mdi-eye-off' : 'mdi-eye'"
+                        :aria-label="comparisonsVisible ? 'Hide comparison images' : 'Show comparison images'"
+                        @click="comparisonsVisible = !comparisonsVisible"
+                      />
+                      <v-btn
+                        variant="text"
+                        size="small"
+                        :icon="showAllComparisons ? 'mdi-layers-triple' : 'mdi-layers-triple-outline'"
+                        :aria-label="showAllComparisons ? 'Show only the selected comparison image' : 'Show all comparison images'"
+                        @click="toggleShowAllComparisons"
+                      />
+                    </div>
+                    <v-slider
+                      v-model="comparisonOpacity"
+                      :min="0"
+                      :max="1"
+                      :step="0.01"
+                      hide-details
+                      density="compact"
+                      prepend-icon="mdi-opacity"
+                      aria-label="Comparison image opacity"
+                    />
+                    <p
+                      v-if="currentComparisonDescription"
+                      class="settings-description"
+                    >
+                      {{ currentComparisonDescription }}
+                    </p>
+                  </template>
+                  <p
+                    v-else
+                    class="settings-hint"
+                  >
+                    Still loading the comparison image collection.
+                  </p>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
           </div>
         </InfoPage>
+        <!--  -->
       </InformationSheet>
     </div>
   </v-app>
@@ -589,10 +633,14 @@ import ImagesetItem from "./components/ImagesetItem.vue";
 import RangeNumberInputs from "./components/RangeNumberInputs.vue";
 import Wwt3dSwitch from "./components/Wwt3dSwitch.vue";
 import TourPlayer from "./tour/TourPlayer.vue";
+import ImagesetOpacity from "./components/imageset_settings/ImagesetOpacity.vue";
+import ImagesetColormap from "./components/imageset_settings/ImagesetColormap.vue";
+import ImagesetStretch from "./components/imageset_settings/ImagesetStretch.vue";
+import AlmagalInfoPage from "./components/AlmagalInfoPage.vue";
 /* Catalog, filters and view flags shared with the tour; see almagal_state.ts */
 import {
   CLUMP_TYPES,
-  FITS_LAYER_SETTINGS,
+  FITS_LAYER_SETTINGS,  
   FITS_LAYER_SETTINGS_RESET,
   almagalColumnRanges,
   almagalSourceLayers,
@@ -605,13 +653,19 @@ import {
   filterSpec,
   foregroundImage,
   foregroundOpacity,
+  infoSheetTab,
   pendingSourceIids,
   selectedAlmagalSource,
   showFilters,
+  showInfoSheet,
   spreadsheetVisible,
+  ALMAGAL_TAB,
+  SETTINGS_TAB,
+  SOURCE_INFORMATION_TAB,
+  USER_GUIDE_TAB,
   type FilterField,
+  type InfoSheetTab,
 } from "./almagal_state";
-
 
 import { useWtmlLoader } from "./composables/useWtmlLoader";
 import { useHoverableSpreadsheetLayer } from "./composables/useHoverableSpreadsheetLayer";
@@ -674,16 +728,32 @@ const props = withDefaults(defineProps<WwtPlaygroundProps>(), {
 });
 
 const backgroundImagesets = reactive<BackgroundImageset[]>([]);
-const showInfoSheet = ref(false);
-// the info sheet's pages register themselves as tabs, in template order
-const infoSheetTab = ref(0);
-/* Positional, like every other tab index here: Information, ALMAGAL, User
-   Guide, Settings. Move the InfoPage and this has to move with it. */
-const SETTINGS_TAB = 3;
+const forceInfoSheetOpen = ref(true);
+/* `showInfoSheet`, `infoSheetTab` and the tab names live in almagal_state.ts,
+   since the tour opens and closes the sheet per step. Each info sheet
+   registers its tab when it is available in the DOM. */
+// the pages that mount together, and so show up as each other's tabs
+const infoGroupTabs: InfoSheetTab[] = [ALMAGAL_TAB, USER_GUIDE_TAB];
+const inInfoGroup = computed(() => infoGroupTabs.includes(infoSheetTab.value));
 /* The info button only appears once a clump is hovered or selected, so the
    sheet needs its own way in for settings that have nothing to do with a clump. */
 function openSettings() {
   infoSheetTab.value = SETTINGS_TAB;
+  showInfoSheet.value = true;
+}
+function openUserGuide() {
+  infoSheetTab.value = USER_GUIDE_TAB;
+  showInfoSheet.value = true;
+}
+/* Each page is mounted only for its own tab, so a button that opens the sheet
+   has to say which tab it means -- this one is about the clump. Still a toggle:
+   pressing it again with the clump's page already up closes the sheet. */
+function openSourceInfo() {
+  if (showInfoSheet.value && infoSheetTab.value === SOURCE_INFORMATION_TAB) {
+    showInfoSheet.value = false;
+    return;
+  }
+  infoSheetTab.value = SOURCE_INFORMATION_TAB;
   showInfoSheet.value = true;
 }
 
@@ -691,6 +761,16 @@ function openSettings() {
    reads `sidePanel`, which also sets the container's flex direction, so the two
    cannot disagree. */
 const showTour = ref(false);
+/* The splash screen's two doors. The tour drawer mounts TourPlayer only once it
+   opens, and TourPlayer runs step 1's setup on mount -- so `showTour` is the
+   whole of "start the tour", and leaving it false is the whole of "let me
+   explore", which drops into the app with nothing set up for it. */
+function startTour() {
+  showTour.value = true;
+}
+function startExploring() {
+  showTour.value = false;
+}
 const tourDrawerLayout = computed<"bottom" | "push" | "float">(() => {
   if (!sidePanel.value) return "bottom";
   /* 700, not 600: 'float' shares the overlay's height with #top-content, so an
@@ -704,11 +784,19 @@ const tourDrawerLayout = computed<"bottom" | "push" | "float">(() => {
    whatever the view has left once the info sheet has taken its share. */
 const tourDrawerWidth = computed(() => tourDrawerLayout.value === "push" ? "34%" : "50%");
 const showSearch = ref(false);
-const showSplashScreen = ref(false);
+const queryShowSplash = searchParams.get("splash")?.toLowerCase() !== 'false';
+const showSplashScreen = ref(queryShowSplash);
 const layersLoaded = ref(false);
 const positionSet = ref(false);
-const accentColor = ref("#306C9F");
-const accentColor2 = ref("#FC9954");
+const almagalBlue = ref("#306C9F");
+const almagalBlueDarker = ref("#002f5c");
+const almagalOrange = ref("#FC9954");
+const almagalOrangeDarker = ref("##c05000");
+// all panels are open by default.
+const settingsPanels = ref<("filters" | "background" | "comparison")[]>(['filters', 'background', 'comparison']);
+watch(settingsPanels, (newVal) => {
+  console.log("settingsPanels changed:", newVal);
+});
 
 const hoveredSource = ref<ALMAGalSource | null>(null);
 const MAX_ITEMS_TO_SHOW = 4;
@@ -1039,11 +1127,20 @@ function view3dFromGlonGlatDistkpc(glon: number, glat: number, dist_kpc: number)
   });
 }
 
-/* Tracks whether the WWT view is currently in 3D mode, kept in sync via wwt-3d-switch's v-model */
-const in3dView = ref(false);
+/* singleton wwt 3d controller */
+import { useWwt3dControl } from "./composables/wwt3dControl";
+import { A } from "vue-router/dist/index-BQLwgiyK.js";
+const { in3D: in3dView, switchTo2D } = useWwt3dControl(store);
 
 watch(in3dView, (in3d) => {
   sunLayer.value?.set_enabled(in3d);
+});
+
+/* The tour's steps all set up 2D sky views, so opening it has to leave 3D. */
+watch(showTour, (open) => {
+  if (open && in3dView.value) {
+    switchTo2D();
+  }
 });
 
 let first3dswap = true;
@@ -1052,13 +1149,18 @@ function setup3DView() {
     return;
   }
   // the swtich has already set the initial view and mode, now we want to zoom out and above the galactic plane
+  const initialTo = {
+    "raRad": -6.2204406298475154,
+    "decRad": 0.09487913429030448
+  };
   store.gotoRADecZoom({
-    raRad: -(store.raRad + Math.PI / 2),
-    decRad: -(store.decRad + 23.5 * D2R), // tilt up by 23.5 degrees to get above the galactic plane
+    // raRad: -(store.raRad + Math.PI / 2),
+    // decRad: -(store.decRad + 23.5 * D2R), // tilt up by 23.5 degrees to get above the galactic plane
+    ...initialTo,
     zoomDeg: 8 * 1000 * 206265,
     rollRad: 62.9 * Math.PI / 180,
     instant: false,
-    duration: 4,
+    duration: 3,
   }).then(() => {
     const [glon, glat] = Coordinates.j2000toGalactic(store.raRad / D2R, store.decRad / D2R);
     console.log("Current glon, glat:", glon, glat);
@@ -1117,8 +1219,8 @@ watch(selectedAlmagalSource, (newSource, oldSource) => {
     });
   }
   // picking a clump means the ALMAGAL blurb is not what is wanted
-  if (newSource && infoSheetTab.value === 1) {
-    infoSheetTab.value = 0;
+  if (newSource && infoSheetTab.value === ALMAGAL_TAB) {
+    infoSheetTab.value = SOURCE_INFORMATION_TAB;
   }
 });
 
@@ -1135,8 +1237,10 @@ const currentSource = computed(() => {
 /* This lets us inject component data into element CSS */
 const cssVars = computed(() => {
   return {
-    "--accent-color": accentColor.value,
-    "--accent-color-2": accentColor2.value,
+    "--almagal-blue": almagalBlue.value,
+    "--almagal-orange": almagalOrange.value,
+    "--almagal-blue-darker": almagalBlueDarker.value,
+    "--almagal-orange-darker": almagalOrangeDarker.value,
   };
 });
 
@@ -1191,6 +1295,16 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
 </script>
 
 <style lang="less">
+@font-face {
+  font-family: "Highway Gothic Narrow";
+  src: url("../assets/HighwayGothicNarrow.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Segoe UI Semibold";
+  src: url("../assets/Segoe UI Semibold.ttf") format("truetype");
+  font-weight: 600;
+}
 
 // #app is a column flex container with two children:
 // #main-content and #bottom-drawer.
@@ -1256,7 +1370,16 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
 
 /* OLD: overlay version. Taken out of flow with `position: absolute`, so it
    slid over #main-content and the WWT view never changed size.
-
+<v-select
+                      v-model="foregroundImage"
+                      class="almagal-v-select"
+                      :items="foregroundImageOptions"
+                      item-title="label"
+                      item-value="value"
+                      hide-details
+                      autofocus
+                      label="Background survey"
+                    />
 #side-drawer {
   position: absolute;
   bottom: 0;
@@ -1335,7 +1458,7 @@ watch(() => almagalWtmlState.value ? almagalWtmlState.value.settings.opacity : n
   overflow-y: auto;
   padding: 1em 1.25em;
   color: #e6e6e6;
-  background-color: rgb(var(--v-theme-surface));
+  background-color: var(--almagal-blue-darker);
 }
 
 /* Teleported into #bottom-content, so it is an ordinary flex item in the
@@ -1643,14 +1766,17 @@ and remember, position:absolute is still a positioned parent, so children can be
   width: 100%;
 }
 
+.on-canvas {
+  background-color: rgba(0, 0, 0, 0.364);
+  border: 1px solid rgba(255, 255, 255, 0.541);
+  border-radius: 5px;
+  backdrop-filter: blur(10px);
+}
+
 .almagal-v-select {
   pointer-events: auto;
-  width: 100%;
-  min-width: 250px;
-  background-color: rgba(0, 0, 0, 0.364);
-  backdrop-filter: blur(10px);
-  outline: 1px solid white;
   border-radius: 4px;
+  min-width: 250px;
 }
 
 .hovered-source-info {
@@ -1671,20 +1797,12 @@ and remember, position:absolute is still a positioned parent, so children can be
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.5em 1.25em;
-  width: 100%;
-  max-width: 230px;
-  max-height: 50vh;
-  overflow-y: auto;
-  pointer-events: auto;
-  padding: 0.5em 0.75em;
-  background-color: rgba(0, 0, 0, 0.364);
-  backdrop-filter: blur(8px);
   border-radius: 8px;
   font-size: 0.9em;
   padding-bottom: 1em;
   padding-right: 1em;
-  scrollbar-gutter: stable;
-  border: 1px solid white;
+  border: none; // browser has a default border on fieldsets
+  
 }
 
 .filter-slider label {
@@ -1711,21 +1829,6 @@ and remember, position:absolute is still a positioned parent, so children can be
 .almagal-filterset > .clump-type-filter {
   grid-column-start: 1;
   grid-column-end: -1;
-}
-
-// Two columns only on a short window that still has width to spare: halving the
-// panel's height is worth covering more sky when height is what runs out first.
-// A height query, not `app-is-small`, since height is the thing at stake.
-@media (max-height: 800px) and (min-width: 700px) {
-  .almagal-filterset {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 470px;
-  }
-
-  // 130px rather than 100px so the five types break 3 + 2 across the wider panel
-  .clump-type-filter > .clump-type-options {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  }
 }
 
 // style the legend to be centerd
@@ -1786,42 +1889,6 @@ and remember, position:absolute is still a positioned parent, so children can be
 }
 
 
-
-.learn-more-card {
-
-  flex-direction: row;
-  display: flex;
-  align-items: center;
-  gap: 0.75em;
-  padding: 0.5em 0.75em;
-
-  text-align: left;
-  font-size: 0.95em;
-  font-weight: bold;
-
-  backdrop-filter: blur(10px);
-  background-color: rgba(0, 0, 0, 0.364);
-
-  border: 1px solid white;
-  border-radius: 8px;
-  cursor: pointer;
-
-  width: fit-content;
-  max-width: 250px;
-  pointer-events: auto;
-
-}
-
-.learn-more-text {
-  flex: 1;
-}
-
-.learn-more-logo {
-  height: 2.75em;
-  width: auto;
-  border-radius: 4px;
-}
-
 /* the comparison controls, now inside the info sheet's Settings tab rather
    than spread across the bottom of the view */
 .settings-page {
@@ -1845,7 +1912,17 @@ and remember, position:absolute is still a positioned parent, so children can be
 
 .settings-description {
   font-size: 0.9em;
-  border-left: 2px solid var(--accent-color);
+  border-left: 2px solid var(--almagal-blue);
   padding-left: 0.75em;
+}
+
+// adjust the wwt-3d switch 
+.wwt-3d-swtich-container .v-input.v-switch > .v-input__prepend {
+  margin-right: 4px;
+  font-size: 20px;
+}
+.wwt-3d-swtich-container .v-input.v-switch > .v-input__append {
+  margin-left: 4px;
+  font-size: 20px;
 }
 </style>
